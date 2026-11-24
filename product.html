@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dragon Spring Swords</title>
+  <meta name="description" content="Hand-finished katanas, swords and kitchen knives, forged in small batches and sharpened by hand. Shipped insured worldwide." />
+  <!-- Remove before launch so search engines can index the store. -->
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#faf8f4" />
+  <meta property="og:site_name" content="Dragon Spring Swords" />
+  <meta property="og:title" content="Dragon Spring Swords" />
+  <meta property="og:description" content="Hand-finished katanas, swords and kitchen knives, forged in small batches and sharpened by hand. Shipped insured worldwide." />
+  <meta property="og:image" content="assets/img/hero-katana.jpg" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400&family=Geist:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/styles.css" />
+  <script>
+    // Motion is opt-in: elements start hidden only when JS runs and the
+    // visitor has not asked for reduced motion.
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      document.documentElement.classList.add('motion-ok');
+    }
+  </script>
+</head>
+<body data-page="product">
+  <div id="layout-top"></div>
+
+  <main id="main" style="position:relative">
+    <div id="product" class="product-page"><div class="shell page-loading" aria-busy="true"></div></div>
+  </main>
+
+  <div id="layout-bottom"></div>
+
+  <dialog class="review-dialog" id="review-dialog" aria-labelledby="review-title">
+    <form id="review-form" novalidate>
+      <div class="review-dialog-head">
+        <h2 id="review-title" class="display-sm">Review your order</h2>
+        <button type="button" class="review-close" id="review-close" aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+      </div>
+      <p class="review-help">We check every review against our orders. Only your first name and last initial are shown.</p>
+      <fieldset class="rating">
+        <legend>Your rating</legend>
+        <div class="rating-stars">
+          <input type="radio" name="rating" id="r5" value="5" /><label for="r5" title="5 stars">★</label>
+          <input type="radio" name="rating" id="r4" value="4" /><label for="r4" title="4 stars">★</label>
+          <input type="radio" name="rating" id="r3" value="3" /><label for="r3" title="3 stars">★</label>
+          <input type="radio" name="rating" id="r2" value="2" /><label for="r2" title="2 stars">★</label>
+          <input type="radio" name="rating" id="r1" value="1" /><label for="r1" title="1 star">★</label>
+        </div>
+      </fieldset>
+      <label>Product <select name="product" id="review-product"><option value="">Choose…</option></select></label>
+      <label>Your review <textarea name="body" rows="4" maxlength="800" required placeholder="How is the blade, the finish, the delivery?"></textarea></label>
+      <div class="review-grid">
+        <label>Full name <input name="name" autocomplete="name" maxlength="60" required /></label>
+        <label>Order number <input name="order" maxlength="40" required placeholder="e.g. DS-1042" /></label>
+      </div>
+      <label>Email used for the order <input name="email" type="email" autocomplete="email" maxlength="120" required /></label>
+      <label class="hp" aria-hidden="true">Website <input name="website" tabindex="-1" autocomplete="off" /></label>
+      <p class="review-error" id="review-error" role="alert" hidden></p>
+      <button type="submit" class="btn btn-dark" id="review-submit">Send review</button>
+    </form>
+    <div class="review-thanks" id="review-thanks" hidden>
+      <h2 class="display-sm">Thank you</h2>
+      <p>Your review will appear once we’ve matched it to your order.</p>
+      <button type="button" class="btn btn-dark" id="review-done">Close</button>
+    </div>
+  </dialog>
+
+  <script src="assets/js/content.js"></script>
+  <!-- Products, photos, reviews, pages, settings and exchange rates from the admin. -->
+  <script src="catalog.js"></script>
+  <script src="assets/js/main.js"></script>
+</body>
+</html>
