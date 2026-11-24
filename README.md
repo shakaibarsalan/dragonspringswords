@@ -9,25 +9,41 @@ Nehta code itself was not changed.
 
 Nothing needs to be installed. macOS already has Python.
 
-- **Easiest:** double-click `start.command`. It opens http://localhost:8080.
-- **Or in Terminal:**
+- **Easiest:** double-click `start.command`. It opens http://localhost:8080 with the
+  fallback content (no products). Press `Ctrl + C` in its window to stop.
+- **With the real products:** run the admin app (admin repo README, "Run locally"); it
+  serves this folder too.
 
-  ```bash
-  cd ~/Desktop/Hadi/dragonspringswords
-  python3 -m http.server 8080
-  ```
-
-  Then open http://localhost:8080. Press `Ctrl + C` to stop.
+Links are root-relative clean URLs (`/shop`, `/shop/katanas`, `/product/<slug>`,
+`/page/<slug>`), so open the site through one of those servers, not by double-clicking
+an `.html` file.
 
 ## What's where
 
 | File | What it holds |
 |---|---|
-| `index.html` | Page structure and fixed copy: hero, story, promises, newsletter, footer |
+| `index.html` | Page structure and fixed copy: hero, story, promises, newsletter |
+| `shop.html`, `product.html`, `page.html`, `404.html` | The other page shells |
 | `assets/js/content.js` | **Edit this for products, prices, categories, forge photos, testimonials and the scrolling strip** |
 | `assets/css/styles.css` | Design tokens (colours, fonts, spacing) at the top, then each section |
 | `assets/js/main.js` | Animations, header behaviour, mobile menu, newsletter form |
 | `assets/img/` | All photos |
+
+## Server-rendered pages (SEO)
+
+On the live site these HTML files are **templates**: the admin app's `store.py` fills them
+before sending, so search engines get real titles, descriptions, product data and links.
+It fills only the marked spots, so keep these markers when editing:
+
+- `<!--seo--> … <!--/seo-->` in `<head>`: title, description, robots, canonical, Open Graph,
+  JSON-LD. What is inside is only used when a file is opened on its own.
+- `<div id="layout-top"></div>` and `<div id="layout-bottom"></div>`: header and footer.
+- `<!--ssr:NAME--> … <!--/ssr:NAME-->`: page content (product grid, product page, …).
+
+The server marks such pages with `<body data-ssr="1">`; `main.js` then keeps the server's
+markup and only adds behaviour. If you change markup that `main.js` draws (product cards,
+header, footer, product page), change the matching template in the admin repo's
+`templates/store/` too.
 
 ## Products, photos and reviews
 
@@ -47,7 +63,7 @@ From the admin repo on your Mac: `./deploy/deploy.sh` uploads this folder to the
   `+92 300 000 0000`) and the social links.
 - Check the copy: the "12 days", "60+ HRC" and resharpening promises are
   placeholders until you confirm them.
-- Remove `<meta name="robots" content="noindex, nofollow">` from `index.html`
-  so search engines can index the site.
+- Search-engine indexing is switched on by the admin repo's `deploy/go-live.sh`
+  (`DS_ALLOW_INDEXING=1`), not in these files.
 - The newsletter form currently only shows a thank-you message. It is not
   connected to an email or WhatsApp service yet.

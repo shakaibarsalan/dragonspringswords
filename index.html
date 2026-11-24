@@ -3,21 +3,24 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!--seo-->
+  <!-- Filled in by the server (store.py): title, description, robots, canonical, Open Graph, JSON-LD.
+       The robots tag below only applies to this file opened on its own. -->
   <title>Dragon Spring Swords — Katanas, swords and fine cutlery</title>
   <meta name="description" content="Hand-finished katanas, swords and kitchen knives, forged in small batches and sharpened by hand. Shipped insured worldwide." />
-  <!-- Remove before launch so search engines can index the store. -->
   <meta name="robots" content="noindex, nofollow" />
   <meta name="theme-color" content="#faf8f4" />
   <meta property="og:site_name" content="Dragon Spring Swords" />
   <meta property="og:title" content="Dragon Spring Swords — Katanas, swords and fine cutlery" />
   <meta property="og:description" content="Hand-finished katanas, swords and kitchen knives, forged in small batches and sharpened by hand. Shipped insured worldwide." />
-  <meta property="og:image" content="assets/img/hero-katana.jpg" />
-  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <meta property="og:image" content="/assets/img/hero-katana.jpg" />
+  <!--/seo-->
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400&family=Geist:wght@400;500&display=swap" rel="stylesheet" />
-  <link rel="preload" as="image" href="assets/img/hero-katana.jpg" />
-  <link rel="stylesheet" href="assets/css/styles.css" />
+  <link rel="preload" as="image" href="/assets/img/hero-katana.jpg" imagesrcset="/assets/img/hero-katana-1200.webp 1200w, /assets/img/hero-katana-2200.webp 2200w" imagesizes="100vw" fetchpriority="high" />
+  <link rel="stylesheet" href="/assets/css/styles.css" />
   <script>
     // Motion is opt-in: elements start hidden only when JS runs and the
     // visitor has not asked for reduced motion.
@@ -34,7 +37,7 @@
 
     <!-- HERO — permanent brand photography -->
     <section class="hero" id="hero" data-surface="inverse">
-      <div class="hero-media" id="hero-media"><img src="assets/img/hero-katana.jpg" alt="" fetchpriority="high" /></div>
+      <div class="hero-media" id="hero-media"><img src="/assets/img/hero-katana.jpg" srcset="/assets/img/hero-katana-1200.webp 1200w, /assets/img/hero-katana-2200.webp 2200w" sizes="100vw" width="2200" height="1467" alt="A katana and its mounts on a display stand" fetchpriority="high" /></div>
       <div class="hero-scrim" id="hero-scrim" aria-hidden="true"></div>
       <div class="shell hero-copy" id="hero-copy">
         <div class="hero-inner">
@@ -45,7 +48,7 @@
             Every blade is sharpened by hand, checked twice, and sent to you ready to use.
           </p>
           <div class="hero-actions enter" style="--d:0.76s">
-            <a href="shop.html" class="btn btn-overlay">Shop the vault</a>
+            <a href="/shop" class="btn btn-overlay">Shop the vault</a>
             <a href="#forge" class="btn btn-outline-light">Inside the forge</a>
           </div>
         </div>
@@ -62,9 +65,9 @@
           <p class="eyebrow reveal" style="--distance:12px">Browse</p>
           <h2 class="display-md split" data-split>Choose your steel</h2>
         </div>
-        <a href="shop.html" class="arrow-link reveal" style="--delay:0.15s">Shop all <svg class="icon-sm" aria-hidden="true"><use href="#i-arrow-right"/></svg></a>
+        <a href="/shop" class="arrow-link reveal" style="--delay:0.15s">Shop all <svg class="icon-sm" aria-hidden="true"><use href="#i-arrow-right"/></svg></a>
       </div>
-      <div class="category-grid" id="category-grid"></div>
+      <div class="category-grid" id="category-grid"><!--ssr:categories--><!--/ssr:categories--></div>
     </section>
 
     <!-- LATEST PRODUCTS — added by the owner in the admin -->
@@ -74,9 +77,9 @@
           <p class="eyebrow reveal" style="--distance:12px">New in the vault</p>
           <h2 class="display-md split" data-split>Fresh from the forge</h2>
         </div>
-        <a href="shop.html" class="arrow-link reveal" id="view-all" style="--delay:0.15s">View all <svg class="icon-sm" aria-hidden="true"><use href="#i-arrow-right"/></svg></a>
+        <!--ssr:viewall--><a href="/shop" class="arrow-link reveal" id="view-all" style="--delay:0.15s">View all <svg class="icon-sm" aria-hidden="true"><use href="#i-arrow-right"/></svg></a><!--/ssr:viewall-->
       </div>
-      <div class="product-grid" id="product-grid"></div>
+      <!--ssr:featured--><div class="product-grid" id="product-grid"></div><!--/ssr:featured-->
       <p class="currency-note" hidden>Prices are converted from US dollars at today’s rate. The final amount is confirmed when you order.</p>
 
       <div class="promises">
@@ -99,11 +102,11 @@
             <div><dt>Small</dt><dd>batches, never mass-made</dd></div>
             <div><dt>For life</dt><dd>free resharpening</dd></div>
           </dl>
-          <a href="shop.html" class="story-link reveal" style="--delay:0.24s"><span class="underline-grow is-drawn">See the pieces</span><svg class="icon-sm" aria-hidden="true"><use href="#i-arrow-right"/></svg></a>
+          <a href="/shop" class="story-link reveal" style="--delay:0.24s"><span class="underline-grow is-drawn">See the pieces</span><svg class="icon-sm" aria-hidden="true"><use href="#i-arrow-right"/></svg></a>
         </div>
         <div class="story-media">
           <div class="story-frame mask"><div class="mask-scale"><div class="parallax" data-parallax="40">
-            <img src="assets/img/story-blacksmith.jpg" alt="A smith hammering hot steel on an anvil" loading="lazy" />
+            <img src="/assets/img/story-blacksmith.jpg" srcset="/assets/img/story-blacksmith-900.webp 900w, /assets/img/story-blacksmith.jpg 1600w" sizes="(min-width: 768px) 50vw, 100vw" width="1600" height="1067" alt="A smith hammering hot steel on an anvil" loading="lazy" />
           </div></div></div>
         </div>
       </div>
@@ -118,7 +121,7 @@
             <h2 class="display-lg split" data-split>Inside the Forge</h2>
             <p class="season reveal" style="--delay:0.1s">From bar to blade</p>
           </div>
-          <a href="shop.html" class="arrow-link reveal" style="--delay:0.15s">See what’s finished <svg class="icon-sm" aria-hidden="true"><use href="#i-arrow-right"/></svg></a>
+          <a href="/shop" class="arrow-link reveal" style="--delay:0.15s">See what’s finished <svg class="icon-sm" aria-hidden="true"><use href="#i-arrow-right"/></svg></a>
         </div>
         <div class="forge-grid" id="forge-grid"></div>
       </div>
@@ -190,9 +193,9 @@
     </div>
   </dialog>
 
-  <script src="assets/js/content.js"></script>
+  <script src="/assets/js/content.js"></script>
   <!-- Products, photos, reviews, pages, settings and exchange rates from the admin. -->
-  <script src="catalog.js"></script>
-  <script src="assets/js/main.js"></script>
+  <script src="/catalog.js"></script>
+  <script src="/assets/js/main.js"></script>
 </body>
 </html>

@@ -8,12 +8,18 @@
  * Data comes from assets/js/content.js (permanent design content) and
  * /catalog.js (products, photos, reviews, pages, settings and exchange rates,
  * all managed by the owner in the admin).
+ *
+ * On the live site the server already fills each page (header, footer, product
+ * grid, product page, …) so search engines see real HTML; <body data-ssr="1">
+ * says so. Then this script keeps that markup and only adds behaviour.
+ * Without data-ssr (a file opened on its own) it draws everything itself.
  */
 (function () {
   'use strict';
 
   const C = window.DRAGONSPRING || {};
   const PAGE = document.body.dataset.page || 'home';
+  const SSR = document.body.dataset.ssr === '1';
   const motionSafe = document.documentElement.classList.contains('motion-ok');
   const S = Object.assign(
     {
@@ -32,10 +38,24 @@
     String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   const icon = (id, cls = 'icon-sm') => `<svg class="${cls}" aria-hidden="true"><use href="#i-${id}"/></svg>`;
   const params = new URLSearchParams(location.search);
-  const productUrl = (p) => `product.html?p=${encodeURIComponent(p.slug)}`;
-  const pageUrl = (slug) => `page.html?p=${encodeURIComponent(slug)}`;
+  // Clean URLs: /shop, /shop/<category>, /product/<slug>, /page/<slug>.
+  const productUrl = (p) => `/product/${encodeURIComponent(p.slug)}`;
+  const pageUrl = (slug) => `/page/${encodeURIComponent(slug)}`;
   const pageTitle = (slug, fallback) => (pages.find((p) => p.slug === slug) || {}).title || fallback;
-  const catHref = (c) => `shop.html?c=${encodeURIComponent(c.slug || '')}`;
+  const shopUrl = (slug) => (slug ? `/shop/${encodeURIComponent(slug)}` : '/shop');
+  const catHref = (c) => shopUrl(c.slug || '');
+  /** Slug after /product/, /page/ or /shop/ in the address (or the old ?p= / ?c= form). */
+  function pathSlug(prefix, legacy) {
+    const m = location.pathname.match(new RegExp(`^/${prefix}/([^/]+)/?$`));
+    if (m) {
+      try {
+        return decodeURIComponent(m[1]);
+      } catch (_) {
+        return m[1];
+      }
+    }
+    return params.get(legacy) || '';
+  }
 
   /* ---------------------------------------------------------------------------
      ICONS (Lucide)
@@ -166,14 +186,14 @@
     `<label class="currency-pick ${extra}"><span class="sr-only">Currency</span><select data-currency aria-label="Currency"></select></label>`;
 
   function navLinks() {
-    const links = [{ href: 'shop.html', label: 'Shop all', key: 'shop' }];
+    const links = [{ href: '/shop', label: 'Shop all', key: 'shop' }];
     categories.slice(0, 3).forEach((c) => links.push({ href: catHref(c), label: c.name, key: 'c:' + c.slug }));
-    links.push({ href: 'index.html#story', label: 'Our story', key: 'story' });
+    links.push({ href: '/#story', label: 'Our story', key: 'story' });
     return links;
   }
 
   function activeKey() {
-    if (PAGE === 'shop') return params.get('c') ? 'c:' + params.get('c') : 'shop';
+    if (PAGE === 'shop') return pathSlug('shop', 'c') ? 'c:' + pathSlug('shop', 'c') : 'shop';
     return '';
   }
 
@@ -185,7 +205,7 @@
     return `
     <div class="announcement" id="announcement" role="region" aria-label="Announcement" data-key="${esc(text)}">
       <div><div class="shell">
-        <p>${html} <a href="shop.html">Shop now ${icon('arrow-right')}</a></p>
+        <p>${html} <a href="/shop">Shop now ${icon('arrow-right')}</a></p>
         <button type="button" class="announcement-close" aria-label="Dismiss announcement">${icon('x')}</button>
       </div></div>
     </div>`;
@@ -198,7 +218,9 @@
     const links = navLinks();
     const helpSlugs = [['shipping', 'Shipping & delivery'], ['returns', 'Returns & exchanges'], ['care', 'Care & sharpening'], ['contact', 'Contact']];
     const legalSlugs = [['terms', 'Terms'], ['privacy', 'Privacy'], ['age-policy', 'Age policy']];
-    document.body.insertAdjacentHTML('afterbegin', SPRITE + '<a href="#main" class="skip-link">Skip to content</a>');
+    if (!document.getElementById('i-menu')) {
+      document.body.insertAdjacentHTML('afterbegin', SPRITE + '<a href="#main" class="skip-link">Skip to content</a>');
+    }
 
     if (top) {
       top.outerHTML = `
@@ -209,10 +231,10 @@
             ${links.map((l) => `<a class="underline-grow${l.key === key ? ' is-drawn' : ''}" href="${esc(l.href)}"${l.key === key ? ' aria-current="page"' : ''}>${esc(l.label)}</a>`).join('')}
           </nav>
           <button type="button" class="menu-toggle" id="menu-open" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu">${icon('menu', 'icon icon-20')}</button>
-          <a href="index.html" class="wordmark" aria-label="Dragon Spring Swords — home">Dragon Spring</a>
+          <a href="/" class="wordmark" aria-label="Dragon Spring Swords — home">Dragon Spring</a>
           <div class="header-actions">
             ${currencyPicker('hide-md')}
-            <a href="shop.html?focus=search" class="icon-link" aria-label="Search the shop">${icon('search', 'icon')}</a>
+            <a href="/shop?focus=search" class="icon-link" aria-label="Search the shop">${icon('search', 'icon')}</a>
           </div>
         </div>
       </header>
@@ -227,7 +249,7 @@
         <div class="shell mobile-menu-extra">
           ${currencyPicker()}
           <a href="${pageUrl('contact')}">Contact</a>
-          <a href="shop.html?focus=search">Search</a>
+          <a href="/shop?focus=search">Search</a>
         </div>
       </div>`;
     }
@@ -255,7 +277,7 @@
             <div class="footer-col">
               <h2 class="eyebrow">Shop</h2>
               <ul>
-                <li><a href="shop.html">All pieces</a></li>
+                <li><a href="/shop">All pieces</a></li>
                 ${categories.map((c) => `<li><a href="${esc(catHref(c))}">${esc(c.name)}</a></li>`).join('')}
               </ul>
             </div>
@@ -287,10 +309,10 @@
   /* ---------------------------------------------------------------------------
      SHARED PIECES
      ------------------------------------------------------------------------ */
-  function productCard(p, i = 0) {
+  function productCard(p, i = 0, eager = false) {
     const discount = p.basePrice ? discountPercent(p.basePrice, p.price) : 0;
     const inStock = p.inStock !== false;
-    const [primary, secondary] = p.images || [];
+    const [primary, secondary] = p.thumbs || p.images || [];
     const hoverImg = p.hover !== false ? secondary : null;
     let badge = '';
     if (!inStock) badge = '<span class="badge badge-overlay">Sold out</span>';
@@ -304,7 +326,7 @@
       <article class="product-card reveal${hoverImg ? ' has-hover' : ''}" style="--delay:${(i % 4) * 0.06}s">
         <a href="${productUrl(p)}">
           <div class="product-frame">
-            ${primary ? `<img class="primary" src="${esc(primary)}" alt="${esc(p.name)}" loading="lazy" />` : ''}
+            ${primary ? `<img class="primary" src="${esc(primary)}" alt="${esc(p.name)}" ${eager ? (i === 0 ? 'fetchpriority="high"' : 'loading="eager"') : 'loading="lazy"'} />` : ''}
             ${hoverImg ? `<img class="secondary" data-src="${esc(hoverImg)}" alt="" aria-hidden="true" />` : ''}
             <div class="badges">${badge}</div>
           </div>
@@ -406,14 +428,14 @@
     }
 
     const catGrid = $('#category-grid');
-    if (catGrid) {
+    if (catGrid && !SSR) {
       catGrid.innerHTML = categories
         .map(
           (c, i) => `
         <article class="reveal" style="--delay:${i * 0.08}s">
           <a href="${esc(catHref(c))}" class="category-card">
             <div class="category-frame mask" style="--delay:${i * 0.06}s">
-              <div class="mask-scale"><img src="${esc(c.image)}" alt="" loading="lazy" /></div>
+              <div class="mask-scale"><img src="${esc(c.thumb || c.image)}" alt="${esc(c.name)}" loading="lazy" /></div>
               <div class="category-label">
                 <div>
                   <h3>${esc(c.name)}</h3>
@@ -429,11 +451,12 @@
     }
 
     const grid = $('#product-grid');
-    if (grid) {
+    if (grid && SSR) wireCards(grid);
+    else if (grid) {
       const n = products.length;
       const shown = products.slice(0, n >= 8 ? 8 : n >= 4 ? 4 : n);
       if (shown.length) {
-        grid.innerHTML = shown.map(productCard).join('');
+        grid.innerHTML = shown.map((x, i) => productCard(x, i)).join('');
         wireCards(grid);
       } else {
         grid.outerHTML = emptyCatalog();
@@ -563,7 +586,7 @@
       submit.disabled = true;
       submit.textContent = 'Sending…';
       try {
-        const res = await fetch('api/reviews', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+        const res = await fetch('/api/reviews', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
         const out = await res.json().catch(() => ({}));
         if (!res.ok || !out.ok) throw new Error(out.error || 'Something went wrong. Please try again.');
         form.reset();
@@ -591,9 +614,11 @@
     const title = $('#shop-title');
     const lede = $('#shop-lede');
     if (!grid) return;
+    // Server-drawn page but no live catalogue (e.g. a crawler that skips /catalog.js): keep it as is.
+    if (SSR && !C.live) return wireCards(grid);
 
     const SORTS = ['featured', 'newest', 'price-asc', 'price-desc'];
-    const state = { c: params.get('c') || '', q: params.get('q') || '', sort: params.get('sort') || 'featured' };
+    const state = { c: pathSlug('shop', 'c'), q: params.get('q') || '', sort: params.get('sort') || 'featured' };
     if (!SORTS.includes(state.sort)) state.sort = 'featured';
     search.value = state.q;
     sort.value = state.sort;
@@ -607,6 +632,7 @@
       .map((it) => `<button type="button" class="chip" data-c="${esc(it.slug)}" aria-pressed="false">${esc(it.name)}<span>${it.n}</span></button>`)
       .join('');
 
+    let first = true;
     function apply(push) {
       const q = state.q.trim().toLowerCase();
       let list = products.filter((p) => !state.c || p.categorySlug === state.c);
@@ -627,7 +653,9 @@
       lede.textContent = cat
         ? `Every piece in ${cat.name.toLowerCase()} we have in the vault right now.`
         : 'Katanas, swords, kitchen knives and cutlery — every piece finished and sharpened by hand.';
-      setMeta(`${cat ? cat.name : 'Shop'} — Dragon Spring Swords`, lede.textContent);
+      // The server already wrote this page's title and description; change them only on later filters.
+      if (!(SSR && first)) setMeta(`${cat ? cat.name : 'Shop'} — Dragon Spring Swords`, lede.textContent);
+      first = false;
       $$('.chip', chips).forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.c === state.c)));
       count.textContent = `${list.length} ${list.length === 1 ? 'piece' : 'pieces'}`;
 
@@ -648,17 +676,16 @@
           apply(true);
         });
       } else {
-        grid.innerHTML = list.map(productCard).join('');
+        grid.innerHTML = list.map((p, i) => productCard(p, i, i < 4)).join('');
         wireCards(grid);
       }
       updatePrices();
       observeMotion(grid);
 
       const qs = new URLSearchParams();
-      if (state.c) qs.set('c', state.c);
       if (state.q) qs.set('q', state.q);
       if (state.sort !== 'featured') qs.set('sort', state.sort);
-      history[push ? 'pushState' : 'replaceState'](null, '', 'shop.html' + (qs.toString() ? '?' + qs : ''));
+      history[push ? 'pushState' : 'replaceState'](null, '', shopUrl(state.c) + (qs.toString() ? '?' + qs : ''));
     }
 
     chips.addEventListener('click', (e) => {
@@ -686,7 +713,10 @@
     });
     window.addEventListener('popstate', () => {
       const p = new URLSearchParams(location.search);
-      state.c = p.get('c') || '';
+      state.c = (location.pathname.match(/^\/shop\/([^/]+)/) || [])[1] || p.get('c') || '';
+      try {
+        state.c = decodeURIComponent(state.c);
+      } catch (_) {}
       state.q = p.get('q') || '';
       state.sort = SORTS.includes(p.get('sort')) ? p.get('sort') : 'featured';
       search.value = state.q;
@@ -703,11 +733,12 @@
   function renderProduct() {
     const root = $('#product');
     if (!root) return;
-    const p = products.find((x) => x.slug === (params.get('p') || ''));
+    const p = products.find((x) => x.slug === pathSlug('product', 'p'));
+    if (SSR) return wireProduct(p);
     if (!p) {
       root.innerHTML = notFoundHtml(
         'Not in the vault', 'This piece isn’t available',
-        'It may have sold or been taken down. Have a look at what’s in the shop now.', 'shop.html', 'Browse the shop',
+        'It may have sold or been taken down. Have a look at what’s in the shop now.', '/shop', 'Browse the shop',
       );
       setMeta('Piece not found — Dragon Spring Swords');
       return;
@@ -731,8 +762,8 @@
     root.innerHTML = `
       <div class="shell product-shell">
         <nav class="crumbs" aria-label="Breadcrumb">
-          <a href="shop.html">Shop</a>
-          ${p.categorySlug ? `<span aria-hidden="true">/</span><a href="shop.html?c=${esc(p.categorySlug)}">${esc(p.categoryName)}</a>` : ''}
+          <a href="/shop">Shop</a>
+          ${p.categorySlug ? `<span aria-hidden="true">/</span><a href="${esc(shopUrl(p.categorySlug))}">${esc(p.categoryName)}</a>` : ''}
           <span aria-hidden="true">/</span><span aria-current="page">${esc(p.name)}</span>
         </nav>
         <div class="product-layout">
@@ -744,13 +775,13 @@
                 <button type="button" class="gallery-nav next" aria-label="Next photo">${icon('arrow-right')}</button>
                 <span class="gallery-count" id="gallery-count">1 / ${images.length}</span>` : ''}
             </div>
-            ${images.length > 1 ? `<div class="gallery-thumbs" aria-label="Choose a photo">${images
+            ${images.length > 1 ? `<div class="gallery-thumbs" aria-label="Choose a photo">${(p.thumbs || images)
               .map((src, i) => `<button type="button" aria-pressed="${i === 0}" data-i="${i}" aria-label="Photo ${i + 1}"><img src="${esc(src)}" alt="" loading="lazy" /></button>`)
               .join('')}</div>` : ''}
           </div>
 
           <div class="product-info">
-            ${p.categoryName ? `<p class="eyebrow"><a href="shop.html?c=${esc(p.categorySlug)}">${esc(p.categoryName)}</a></p>` : ''}
+            ${p.categoryName ? `<p class="eyebrow"><a href="${esc(shopUrl(p.categorySlug))}">${esc(p.categoryName)}</a></p>` : ''}
             <h1 class="display-md">${esc(p.name)}</h1>
             ${p.subtitle ? `<p class="product-sub">${esc(p.subtitle)}</p>` : ''}
             ${myReviews.length ? `<a href="#product-reviews" class="rating-line"><span class="stars-inline" aria-hidden="true">${stars(avg)}</span> ${avg.toFixed(1)} · ${myReviews.length} verified review${myReviews.length === 1 ? '' : 's'}</a>` : ''}
@@ -798,15 +829,24 @@
       ${related.length ? `
       <section class="shell section section-tight">
         <div class="section-heading"><div><p class="eyebrow">Also in the vault</p><h2 class="display-sm">You may also like</h2></div>
-          <a href="shop.html" class="arrow-link">View all ${icon('arrow-right')}</a></div>
-        <div class="product-grid">${related.map(productCard).join('')}</div>
+          <a href="/shop" class="arrow-link">View all ${icon('arrow-right')}</a></div>
+        <div class="product-grid">${related.map((x, i) => productCard(x, i)).join('')}</div>
       </section>` : ''}`;
 
-    wireCards(root);
     setMeta(`${p.name} — Dragon Spring Swords`, p.description || `${p.name}${p.subtitle ? ', ' + p.subtitle : ''}. Hand-finished by Dragon Spring Swords.`);
+    wireProduct(p);
+  }
+
+  /** Order links, gallery and card hovers on a product page (drawn here or by the server). */
+  function wireProduct(p) {
+    const root = $('#product');
+    wireCards(root);
+    if (!$('#gallery-main')) return; // "not found" page
 
     // Order links carry the piece, the price the visitor sees, and the page.
+    const inStock = p && p.inStock !== false;
     function updateOrderLinks() {
+      if (!p) return; // no live catalogue: keep the server's US-dollar links
       const shown = currency === 'USD' ? formatPrice(p.price) : `${formatPrice(p.price)} (US ${formatPrice(p.price, 'USD')})`;
       const msg = `Hello Dragon Spring Swords, I'd like to ${inStock ? 'order' : 'ask about'}:\n${p.name}${p.subtitle ? ' — ' + p.subtitle : ''}\nPrice shown: ${shown}\n${location.href}`;
       const wa = $('#order-wa');
@@ -846,27 +886,6 @@
       });
     }
 
-    // Structured data so search engines can show price and availability.
-    const ld = {
-      '@context': 'https://schema.org',
-      '@type': 'Product',
-      name: p.name,
-      image: images.map((src) => new URL(src, location.href).href),
-      description: p.description || p.subtitle || p.name,
-      brand: { '@type': 'Brand', name: 'Dragon Spring Swords' },
-      offers: {
-        '@type': 'Offer',
-        price: p.price,
-        priceCurrency: 'USD',
-        availability: inStock ? 'https://schema.org/InStock' : 'https://schema.org/SoldOut',
-        url: location.href,
-      },
-    };
-    if (myReviews.length) ld.aggregateRating = { '@type': 'AggregateRating', ratingValue: avg.toFixed(1), reviewCount: myReviews.length };
-    const s = document.createElement('script');
-    s.type = 'application/ld+json';
-    s.textContent = JSON.stringify(ld);
-    document.head.appendChild(s);
   }
 
   /* ---------------------------------------------------------------------------
@@ -875,10 +894,11 @@
   function renderInfo() {
     const root = $('#info');
     if (!root) return;
-    const slug = params.get('p') || '';
+    if (SSR) return; // already drawn by the server
+    const slug = pathSlug('page', 'p');
     const pg = pages.find((x) => x.slug === slug);
     if (!pg) {
-      root.innerHTML = notFoundHtml('Not found', 'This page has left the vault', 'The link may be old or mistyped.', 'index.html', 'Back to the homepage');
+      root.innerHTML = notFoundHtml('Not found', 'This page has left the vault', 'The link may be old or mistyped.', '/', 'Back to the homepage');
       setMeta('Page not found — Dragon Spring Swords');
       return;
     }
@@ -897,7 +917,7 @@
         : '';
     root.innerHTML = `
       <div class="shell info-shell">
-        <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">Home</a><span aria-hidden="true">/</span><span aria-current="page">${esc(pg.title)}</span></nav>
+        <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><span aria-current="page">${esc(pg.title)}</span></nav>
         <div class="info-layout">
           <article class="info-body">
             <h1 class="display-md">${esc(pg.title)}</h1>
@@ -949,7 +969,7 @@
           return;
         }
         try {
-          const res = await fetch('api/subscribe', {
+          const res = await fetch('/api/subscribe', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contact: value, website: form.website.value }),

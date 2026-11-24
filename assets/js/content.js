@@ -17,17 +17,17 @@ window.DRAGONSPRING = {
   ],
 
   categories: [
-    { name: 'Katanas', slug: 'katanas', count: 0, unit: 'blades', image: 'assets/img/category-katanas.jpg' },
-    { name: 'Swords', slug: 'swords', count: 0, unit: 'blades', image: 'assets/img/category-swords.jpg' },
-    { name: 'Kitchen & Cutlery', slug: 'kitchen-cutlery', count: 0, unit: 'pieces', image: 'assets/img/category-kitchen.jpg' },
+    { name: 'Katanas', slug: 'katanas', count: 0, unit: 'blades', image: '/assets/img/category-katanas.jpg' },
+    { name: 'Swords', slug: 'swords', count: 0, unit: 'blades', image: '/assets/img/category-swords.jpg' },
+    { name: 'Kitchen & Cutlery', slug: 'kitchen-cutlery', count: 0, unit: 'pieces', image: '/assets/img/category-kitchen.jpg' },
   ],
 
   products: [],
 
   forge: [
-    { title: 'Shaping at the anvil', stage: 'Stage 01', image: 'assets/img/forge-anvil.jpg' },
-    { title: 'Quench and temper', stage: 'Stage 02', image: 'assets/img/forge-quench.jpg' },
-    { title: 'Embers before dawn', stage: 'Stage 03', image: 'assets/img/forge-embers.jpg' },
+    { title: 'Shaping at the anvil', stage: 'Stage 01', image: '/assets/img/forge-anvil.jpg' },
+    { title: 'Quench and temper', stage: 'Stage 02', image: '/assets/img/forge-quench.jpg' },
+    { title: 'Embers before dawn', stage: 'Stage 03', image: '/assets/img/forge-embers.jpg' },
   ],
 
   // Reviews come only from the admin (verified orders, approved by the owner).

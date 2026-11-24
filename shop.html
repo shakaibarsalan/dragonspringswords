@@ -3,20 +3,23 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!--seo-->
+  <!-- Filled in by the server (store.py): title, description, robots, canonical, Open Graph, JSON-LD.
+       The robots tag below only applies to this file opened on its own. -->
   <title>Shop — Dragon Spring Swords</title>
   <meta name="description" content="Every katana, sword, kitchen knife and cutlery set in the Dragon Spring vault." />
-  <!-- Remove before launch so search engines can index the store. -->
   <meta name="robots" content="noindex, nofollow" />
   <meta name="theme-color" content="#faf8f4" />
   <meta property="og:site_name" content="Dragon Spring Swords" />
   <meta property="og:title" content="Shop — Dragon Spring Swords" />
   <meta property="og:description" content="Every katana, sword, kitchen knife and cutlery set in the Dragon Spring vault." />
-  <meta property="og:image" content="assets/img/hero-katana.jpg" />
-  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <meta property="og:image" content="/assets/img/hero-katana.jpg" />
+  <!--/seo-->
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400&family=Geist:wght@400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="assets/css/styles.css" />
+  <link rel="stylesheet" href="/assets/css/styles.css" />
   <script>
     // Motion is opt-in: elements start hidden only when JS runs and the
     // visitor has not asked for reduced motion.
@@ -30,13 +33,13 @@
 
   <main id="main" style="position:relative">
     <section class="shell shop-head">
-      <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">Home</a><span aria-hidden="true">/</span><span aria-current="page">Shop</span></nav>
-      <h1 class="display-lg" id="shop-title">All pieces</h1>
-      <p class="shop-lede" id="shop-lede"></p>
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><span aria-current="page">Shop</span></nav>
+      <!--ssr:shophead--><h1 class="display-lg" id="shop-title">All pieces</h1>
+      <p class="shop-lede" id="shop-lede"></p><!--/ssr:shophead-->
     </section>
     <section class="shell shop-body" aria-label="Products">
       <div class="shop-toolbar">
-        <div class="chips" id="shop-chips" role="group" aria-label="Filter by category"></div>
+        <div class="chips" id="shop-chips" role="group" aria-label="Filter by category"><!--ssr:chips--><!--/ssr:chips--></div>
         <div class="shop-tools">
           <form id="shop-search-form" class="shop-search" role="search">
             <svg class="icon-sm" aria-hidden="true"><use href="#i-search"/></svg>
@@ -53,17 +56,18 @@
           </label>
         </div>
       </div>
-      <p class="shop-count" id="shop-count" aria-live="polite"></p>
-      <div class="product-grid" id="shop-grid"></div>
+      <p class="shop-count" id="shop-count" aria-live="polite"><!--ssr:count--><!--/ssr:count--></p>
+      <h2 class="sr-only">Products</h2>
+      <div class="product-grid" id="shop-grid"><!--ssr:grid--><!--/ssr:grid--></div>
       <p class="currency-note" hidden>Prices are converted from US dollars at today’s rate. The final amount is confirmed when you order.</p>
     </section>
   </main>
 
   <div id="layout-bottom"></div>
 
-  <script src="assets/js/content.js"></script>
+  <script src="/assets/js/content.js"></script>
   <!-- Products, photos, reviews, pages, settings and exchange rates from the admin. -->
-  <script src="catalog.js"></script>
-  <script src="assets/js/main.js"></script>
+  <script src="/catalog.js"></script>
+  <script src="/assets/js/main.js"></script>
 </body>
 </html>

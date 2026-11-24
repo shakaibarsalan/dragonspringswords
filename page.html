@@ -3,20 +3,23 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!--seo-->
+  <!-- Filled in by the server (store.py): title, description, robots, canonical, Open Graph, JSON-LD.
+       The robots tag below only applies to this file opened on its own. -->
   <title>Dragon Spring Swords</title>
   <meta name="description" content="Hand-finished katanas, swords and kitchen knives, forged in small batches and sharpened by hand. Shipped insured worldwide." />
-  <!-- Remove before launch so search engines can index the store. -->
   <meta name="robots" content="noindex, nofollow" />
   <meta name="theme-color" content="#faf8f4" />
   <meta property="og:site_name" content="Dragon Spring Swords" />
   <meta property="og:title" content="Dragon Spring Swords" />
   <meta property="og:description" content="Hand-finished katanas, swords and kitchen knives, forged in small batches and sharpened by hand. Shipped insured worldwide." />
-  <meta property="og:image" content="assets/img/hero-katana.jpg" />
-  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <meta property="og:image" content="/assets/img/hero-katana.jpg" />
+  <!--/seo-->
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400&family=Geist:wght@400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="assets/css/styles.css" />
+  <link rel="stylesheet" href="/assets/css/styles.css" />
   <script>
     // Motion is opt-in: elements start hidden only when JS runs and the
     // visitor has not asked for reduced motion.
@@ -29,14 +32,14 @@
   <div id="layout-top"></div>
 
   <main id="main" style="position:relative">
-    <div id="info" class="info-page"><div class="shell page-loading" aria-busy="true"></div></div>
+    <div id="info" class="info-page"><!--ssr:info--><div class="shell page-loading" aria-busy="true"></div><!--/ssr:info--></div>
   </main>
 
   <div id="layout-bottom"></div>
 
-  <script src="assets/js/content.js"></script>
+  <script src="/assets/js/content.js"></script>
   <!-- Products, photos, reviews, pages, settings and exchange rates from the admin. -->
-  <script src="catalog.js"></script>
-  <script src="assets/js/main.js"></script>
+  <script src="/catalog.js"></script>
+  <script src="/assets/js/main.js"></script>
 </body>
 </html>
