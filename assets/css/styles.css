@@ -1209,3 +1209,16 @@ a.contact-card:hover { border-color: var(--ink); }
 }
 .primary-nav a { white-space: nowrap; }
 @media (min-width: 1200px) and (max-width: 1359px) { .primary-nav { gap: 1.25rem; } }
+
+/* Brand mark: the gold dragon medallion beside the wordmark (header and menu). */
+.wordmark { display: inline-flex; align-items: center; gap: 0.75rem; }
+.wordmark-mark { display: block; width: 2.75rem; height: 2.75rem; flex-shrink: 0; border-radius: 50%; }
+.mobile-menu-top .wordmark-mark { width: 2.25rem; height: 2.25rem; }
+@media (max-width: 767px) {
+  .wordmark { gap: 0.5rem; }
+  .wordmark-mark { width: 2.125rem; height: 2.125rem; }
+}
+/* Footer: the gold dragon-and-katana emblem beside the stacked wordmark. */
+.footer-lockup { display: flex; align-items: center; gap: 1.25rem; }
+.footer-emblem { display: block; width: auto; height: 9rem; flex-shrink: 0; }
+@media (min-width: 768px) { .footer-emblem { height: 11rem; } }

@@ -231,7 +231,7 @@
             ${links.map((l) => `<a class="underline-grow${l.key === key ? ' is-drawn' : ''}" href="${esc(l.href)}"${l.key === key ? ' aria-current="page"' : ''}>${esc(l.label)}</a>`).join('')}
           </nav>
           <button type="button" class="menu-toggle" id="menu-open" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu">${icon('menu', 'icon icon-20')}</button>
-          <a href="/" class="wordmark" aria-label="Dragon Spring Swords — home">Dragon Spring</a>
+          <a href="/" class="wordmark" aria-label="Dragon Spring Swords — home"><img class="wordmark-mark" src="/assets/img/brand/logo-mark.webp" alt="" width="44" height="44" decoding="async" /><span>Dragon Spring</span></a>
           <div class="header-actions">
             ${currencyPicker('hide-md')}
             <a href="/shop?focus=search" class="icon-link" aria-label="Search the shop">${icon('search', 'icon')}</a>
@@ -240,7 +240,7 @@
       </header>
       <div class="mobile-menu" id="mobile-menu" role="dialog" aria-modal="true" aria-label="Menu">
         <div class="shell mobile-menu-top">
-          <span class="wordmark">Dragon Spring</span>
+          <span class="wordmark"><img class="wordmark-mark" src="/assets/img/brand/logo-mark.webp" alt="" width="36" height="36" decoding="async" /><span>Dragon Spring</span></span>
           <button type="button" id="menu-close" aria-label="Close menu">${icon('x', 'icon icon-20')}</button>
         </div>
         <nav class="shell" aria-label="Primary">
@@ -270,7 +270,7 @@
         <div class="shell">
           <div class="footer-grid">
             <div class="footer-brand">
-              <p class="footer-wordmark">Dragon Spring<span>Swords</span></p>
+              <div class="footer-lockup"><img class="footer-emblem" src="/assets/img/brand/logo-emblem.webp" alt="" width="120" height="220" loading="lazy" decoding="async" /><p class="footer-wordmark">Dragon Spring<span>Swords</span></p></div>
               <p class="tagline">Katanas, swords and fine cutlery. Forged slowly, sharpened by hand.</p>
               <address>${contactLines}</address>
             </div>
