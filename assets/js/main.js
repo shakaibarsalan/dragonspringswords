@@ -283,7 +283,7 @@
             </div>
             <div class="footer-col">
               <h2 class="eyebrow">Help</h2>
-              <ul>${helpSlugs.map(([s, t]) => `<li><a href="${pageUrl(s)}">${esc(pageTitle(s, t))}</a></li>`).join('')}</ul>
+              <ul>${helpSlugs.map(([s, t]) => `<li><a href="${pageUrl(s)}">${esc(pageTitle(s, t))}</a></li>`).join('')}<li><a href="#chat" data-support-open>Chat with a person</a></li></ul>
             </div>
             <div class="footer-news">
               <h2 class="eyebrow">First look</h2>
@@ -1136,6 +1136,13 @@
      ------------------------------------------------------------------------ */
   function initChat() {
     if (!S.chat_key || !/^https:\/\//.test(S.chat_src || '')) return;
+    // "Talk to a person" inside HaloChime ends the AI chat and opens our own chat (support.js),
+    // which lands in the admin's Support inbox.
+    window.Halochime = window.Halochime || { q: [] };
+    (window.Halochime.q = window.Halochime.q || []).push(['setSwitch', {
+      label: 'Talk to a person',
+      onSelect: () => window.DSSupport && window.DSSupport.open(),
+    }]);
     const s = document.createElement('script');
     s.src = S.chat_src;
     s.async = true;
