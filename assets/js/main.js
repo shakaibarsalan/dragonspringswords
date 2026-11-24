@@ -93,17 +93,17 @@
     PKR: 'Pakistani rupee', USD: 'US dollar', EUR: 'Euro', GBP: 'British pound', AED: 'UAE dirham',
     SAR: 'Saudi riyal', CAD: 'Canadian dollar', AUD: 'Australian dollar', INR: 'Indian rupee',
     JPY: 'Japanese yen', CNY: 'Chinese yuan', TRY: 'Turkish lira', MYR: 'Malaysian ringgit',
-    SGD: 'Singapore dollar', QAR: 'Qatari riyal', KWD: 'Kuwaiti dinar',
+    SGD: 'Singapore dollar', QAR: 'Qatari riyal', KWD: 'Kuwaiti dinar', CHF: 'Swiss franc',
   };
   const COUNTRY_CURRENCY = {
     PK: 'PKR', US: 'USD', GB: 'GBP', AE: 'AED', SA: 'SAR', CA: 'CAD', AU: 'AUD', IN: 'INR', JP: 'JPY',
-    CN: 'CNY', TR: 'TRY', MY: 'MYR', SG: 'SGD', QA: 'QAR', KW: 'KWD',
+    CN: 'CNY', TR: 'TRY', MY: 'MYR', SG: 'SGD', QA: 'QAR', KW: 'KWD', CH: 'CHF', LI: 'CHF',
   };
   'AT BE CY DE EE ES FI FR GR HR IE IT LT LU LV MT NL PT SI SK'.split(' ').forEach((c) => (COUNTRY_CURRENCY[c] = 'EUR'));
   const TZ_COUNTRY = {
     'Asia/Karachi': 'PK', 'Europe/London': 'GB', 'Asia/Dubai': 'AE', 'Asia/Riyadh': 'SA',
     'Asia/Kolkata': 'IN', 'Asia/Calcutta': 'IN', 'Asia/Tokyo': 'JP', 'Asia/Shanghai': 'CN',
-    'Europe/Istanbul': 'TR', 'Asia/Kuala_Lumpur': 'MY', 'Asia/Singapore': 'SG', 'Asia/Qatar': 'QA',
+    'Europe/Istanbul': 'TR', 'Europe/Zurich': 'CH', 'Europe/Vaduz': 'LI', 'Asia/Kuala_Lumpur': 'MY', 'Asia/Singapore': 'SG', 'Asia/Qatar': 'QA',
     'Asia/Kuwait': 'KW', 'America/Toronto': 'CA', 'America/Vancouver': 'CA', 'America/Edmonton': 'CA',
     'America/Winnipeg': 'CA', 'America/Halifax': 'CA',
   };
