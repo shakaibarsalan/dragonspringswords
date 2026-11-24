@@ -794,6 +794,7 @@
             ${p.finishes && p.finishes.length > 1 ? `<div class="finish-row"><span>Finishes</span><div class="swatches swatches-lg">${p.finishes.map((h) => `<span style="background:${esc(h)}"></span>`).join('')}</div></div>` : ''}
 
             <div class="order-box">
+              ${inStock ? `<a class="btn btn-dark btn-block" href="/checkout?p=${encodeURIComponent(p.slug)}" data-buy hidden>Buy now</a>` : ''}
               ${S.whatsapp ? `<a class="btn btn-dark btn-block" id="order-wa" target="_blank" rel="noopener">${icon('whatsapp')} ${inStock ? 'Order on WhatsApp' : 'Ask about availability'}</a>` : ''}
               ${S.email ? `<a class="btn ${S.whatsapp ? 'btn-outline-dark' : 'btn-dark'} btn-block" id="order-mail">${icon('mail')} ${inStock ? 'Email to order' : 'Email about availability'}</a>` : ''}
               ${S.order_note ? `<p class="order-note">${esc(S.order_note)}</p>` : ''}
