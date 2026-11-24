@@ -5,6 +5,11 @@
  * and bank-transfer instructions (also emailed). Prices are always recalculated
  * by the server; the totals here are only a preview.
  *
+ * Country rules (set by the owner in the admin): /api/shipping-check says whether
+ * this product can go to the chosen country (or Australian state). Blocked places
+ * can't order; "check" places order without bank details until the owner confirms.
+ * The server enforces the same rules when the order is placed.
+ *
  * On product pages: reveals the "Buy now" button ([data-buy]) when online
  * ordering is switched on in the admin.
  */
@@ -64,12 +69,22 @@
   const slug = new URLSearchParams(location.search).get('p') || '';
   const product = (C.products || []).find((p) => p.slug === slug);
 
-  const COUNTRIES = [
-    'United States', 'United Kingdom', 'Canada', 'Australia', 'Germany', 'France', 'Netherlands', 'Italy', 'Spain',
-    'Ireland', 'Sweden', 'Norway', 'Denmark', 'Finland', 'Switzerland', 'Austria', 'Belgium', 'Poland', 'Portugal',
-    'New Zealand', 'United Arab Emirates', 'Saudi Arabia', 'Qatar', 'Kuwait', 'Bahrain', 'Oman', 'Pakistan',
-    'Turkey', 'Malaysia', 'Singapore', 'Japan', 'South Korea', 'Hong Kong', 'Philippines', 'South Africa', 'Brazil', 'Mexico',
-  ];
+  // Visitor's country (from the currency lookup) → pre-selects the main markets only.
+  const ISO_NAME = {
+    US: 'United States', CA: 'Canada', GB: 'United Kingdom', DE: 'Germany', CH: 'Switzerland',
+    AU: 'Australia', FI: 'Finland', ES: 'Spain', EE: 'Estonia', SA: 'Saudi Arabia',
+  };
+  const SUBMIT_PAY = 'Place order — pay by bank transfer';
+  const SUBMIT_CHECK = 'Place order — we’ll confirm before you pay';
+
+  function countryOptions(cfg) {
+    const main = cfg.mainCountries || [];
+    const rest = (cfg.countries || []).filter((c) => !main.includes(c));
+    const opt = (c) => `<option value="${esc(c)}">${esc(c)}</option>`;
+    return `<option value="">Choose your country</option>
+      <optgroup label="Where we ship most">${main.map(opt).join('')}</optgroup>
+      <optgroup label="All countries">${rest.map(opt).join('')}</optgroup>`;
+  }
 
   function contactButtons() {
     const out = [];
@@ -120,12 +135,16 @@
             <label>Apartment, suite, etc. <small>optional</small><input name="address2" autocomplete="address-line2" maxlength="120" /></label>
             <div class="co-grid co-grid-3">
               <label>City <input name="city" autocomplete="address-level2" maxlength="80" required /></label>
-              <label>State / region <input name="region" autocomplete="address-level1" maxlength="80" /></label>
+              <label id="co-region-label"><span id="co-region-text">State / region</span>
+                <input name="region" id="co-region-input" autocomplete="address-level1" maxlength="80" />
+                <select name="region" id="co-region-select" autocomplete="address-level1" hidden disabled>
+                  <option value="">Choose state</option>${(cfg.auStates || []).map((st) => `<option value="${esc(st)}">${esc(st)}</option>`).join('')}
+                </select>
+              </label>
               <label>Postcode <input name="postcode" autocomplete="postal-code" maxlength="20" /></label>
             </div>
-            <label>Country <input name="country" list="co-countries" autocomplete="country-name" maxlength="60" required />
-              <datalist id="co-countries">${COUNTRIES.map((c) => `<option value="${esc(c)}"></option>`).join('')}</datalist>
-            </label>
+            <label>Country <select name="country" id="co-country" autocomplete="country-name" required>${countryOptions(cfg)}</select></label>
+            <div class="co-rules" id="co-rules" role="status" aria-live="polite" hidden></div>
             <p class="co-hint">Some countries restrict importing blades. Please check your local rules — we can’t ship where it isn’t allowed.</p>
           </fieldset>
           <fieldset>
@@ -139,8 +158,8 @@
           </fieldset>
           <label class="hp" aria-hidden="true">Website <input name="website" tabindex="-1" autocomplete="off" /></label>
           <p class="co-error" id="co-error" role="alert" hidden></p>
-          <button type="submit" class="btn btn-dark btn-block co-submit" id="co-submit">Place order — pay by bank transfer</button>
-          <p class="co-hint co-center">No payment is taken now. You’ll get our bank details and your order number straight away.</p>
+          <button type="submit" class="btn btn-dark btn-block co-submit" id="co-submit">${SUBMIT_PAY}</button>
+          <p class="co-hint co-center" id="co-submit-hint">No payment is taken now. You’ll get our bank details and your order number straight away.</p>
         </form>
 
         <aside class="checkout-summary" aria-label="Order summary">
@@ -195,6 +214,58 @@
     const form = $('#checkout-form');
     const error = $('#co-error');
     const submit = $('#co-submit');
+    const countrySel = $('#co-country');
+    const regionInput = $('#co-region-input');
+    const regionSel = $('#co-region-select');
+    const rulesBox = $('#co-rules');
+    const submitHint = $('#co-submit-hint');
+    let verdict = { blocked: null, needsCheck: false, buyerNotes: [] };
+    let checkSeq = 0;
+
+    function showVerdict() {
+      const parts = [];
+      if (verdict.blocked) parts.push(`<p class="co-rules-block">${esc(verdict.blocked)}</p>`);
+      else (verdict.buyerNotes || []).forEach((n) => parts.push(`<p>${esc(n)}</p>`));
+      rulesBox.innerHTML = parts.join('');
+      rulesBox.hidden = !parts.length;
+      rulesBox.classList.toggle('is-blocked', !!verdict.blocked);
+      submit.disabled = !!verdict.blocked;
+      submit.textContent = verdict.needsCheck ? SUBMIT_CHECK : SUBMIT_PAY;
+      submitHint.textContent = verdict.blocked
+        ? 'This piece can’t be shipped to the address above.'
+        : verdict.needsCheck
+          ? 'No payment now. We’ll check the import rules and email you the payment details, usually within 1–2 working days.'
+          : 'No payment is taken now. You’ll get our bank details and your order number straight away.';
+    }
+
+    async function checkRules() {
+      const country = countrySel.value;
+      const isAU = country === 'Australia';
+      regionSel.hidden = regionSel.disabled = !isAU;
+      regionSel.required = isAU;
+      regionInput.hidden = regionInput.disabled = isAU;
+      $('#co-region-text').textContent = isAU ? 'State / territory' : 'State / region';
+      const state = isAU ? regionSel.value : '';
+      verdict = { blocked: null, needsCheck: false, buyerNotes: [] };
+      if (!country || (isAU && !state)) return showVerdict();
+      const seq = ++checkSeq;
+      try {
+        const q = new URLSearchParams({ p: product.slug, country, state });
+        const res = await fetch('/api/shipping-check?' + q, { headers: { Accept: 'application/json' } });
+        const out = await res.json();
+        if (seq !== checkSeq) return;
+        if (out.ok) verdict = out;
+      } catch (_) {
+        /* the server checks again when the order is placed */
+      }
+      showVerdict();
+    }
+    countrySel.addEventListener('change', checkRules);
+    regionSel.addEventListener('change', checkRules);
+    const guess = ISO_NAME[String((C.currency || {}).country || '').toUpperCase()];
+    if (guess && [...countrySel.options].some((o) => o.value === guess)) countrySel.value = guess;
+    checkRules();
+
     form.addEventListener('input', (e) => {
       e.target.removeAttribute('aria-invalid');
       error.hidden = true;
@@ -207,6 +278,8 @@
       const missing = required.filter((k) => !String(data[k] || '').trim());
       if (missing.length) return fail('Please fill in the highlighted fields.', missing);
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(data.email.trim())) return fail('That email address doesn’t look right.', ['email']);
+      if (countrySel.value === 'Australia' && !regionSel.value) return fail('Please choose your Australian state or territory.', ['region']);
+      if (verdict.blocked) return fail(verdict.blocked, ['country']);
       if (!form.adult.checked || !form.agree.checked) return fail('Please tick both boxes to confirm.');
       submit.disabled = true;
       submit.textContent = 'Placing your order…';
@@ -217,21 +290,27 @@
           body: JSON.stringify({ ...data, product: product.slug, qty, adult: true, agree: true }),
         });
         const out = await res.json().catch(() => ({}));
-        if (!res.ok || !out.ok) return fail(out.error || 'Something went wrong. Please try again.', out.fields || []);
+        if (!res.ok || !out.ok) {
+          if (out.blocked) {
+            verdict = { blocked: out.error, needsCheck: false, buyerNotes: [] };
+            showVerdict();
+          }
+          return fail(out.error || 'Something went wrong. Please try again.', out.fields || (out.blocked ? ['country'] : []));
+        }
         done(out);
       } catch (_) {
         fail('Couldn’t reach us just now. Please check your connection and try again.');
       } finally {
-        submit.disabled = false;
-        submit.textContent = 'Place order — pay by bank transfer';
+        if (document.body.contains(submit)) showVerdict();
       }
     });
 
     function fail(msg, fields = []) {
       error.textContent = msg;
       error.hidden = false;
-      fields.forEach((f) => form[f] && form[f].setAttribute('aria-invalid', 'true'));
-      const first = fields.length && form[fields[0]];
+      const field = (f) => (f === 'region' ? (countrySel.value === 'Australia' ? regionSel : regionInput) : form[f]);
+      fields.forEach((f) => field(f) && field(f).setAttribute('aria-invalid', 'true'));
+      const first = fields.length && field(fields[0]);
       (first || error).scrollIntoView({ behavior: 'smooth', block: 'center' });
       if (first) first.focus({ preventScroll: true });
     }
@@ -239,6 +318,29 @@
 
   function done(o) {
     document.title = `Order ${o.number} — Dragon Spring Swords`;
+    const notes = (o.buyerNotes || []).length
+      ? `<div class="co-rules">${o.buyerNotes.map((n) => `<p>${esc(n)}</p>`).join('')}</div>`
+      : '';
+    const waLink = S.whatsapp
+      ? `<a class="btn btn-outline-dark" href="https://wa.me/${esc(S.whatsapp)}?text=${encodeURIComponent('Hello, about my order ' + o.number)}" target="_blank" rel="noopener">Questions? WhatsApp us</a>`
+      : '';
+    if (o.needsCheck) {
+      root.innerHTML = `
+      <div class="co-done">
+        <p class="eyebrow">Order received</p>
+        <h1 class="display-md">Thank you — your order number is <span class="co-number">${esc(o.number)}</span></h1>
+        <p><strong>Please don’t pay yet.</strong> Importing swords into your country can need a permit, so we check the current rules for every sword order first. We’ll email <strong>${esc(o.email)}</strong> with the payment details, usually within 1–2 working days, or tell you if we can’t ship it.</p>
+        ${notes}
+        <ol class="co-next">
+          <li><strong>We check</strong> the import rules for your address.</li>
+          <li><strong>You pay</strong> by bank transfer once we’ve emailed the details (${usd(o.total)} USD).</li>
+          <li><strong>We ship</strong> after the payment clears — insured, tracked and signed-for.</li>
+        </ol>
+        <div class="checkout-message-actions"><a class="btn btn-dark" href="/shop">Keep browsing</a>${waLink}</div>
+      </div>`;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
     root.innerHTML = `
       <div class="co-done">
         <p class="eyebrow">Order placed</p>
@@ -251,12 +353,13 @@ Reference: ${esc(o.number)}
 
 ${esc(o.bankDetails)}</pre>
         </div>
+        ${notes}
         <ol class="co-next">
           <li><strong>Pay</strong> — any bank or transfer fees are paid by the sender, so the full amount arrives.</li>
           <li><strong>We confirm</strong> — you’ll get an email as soon as the payment clears.</li>
           <li><strong>We ship</strong> — insured, tracked and signed-for. The tracking number comes by email.</li>
         </ol>
-        <div class="checkout-message-actions"><a class="btn btn-dark" href="/shop">Keep browsing</a>${S.whatsapp ? `<a class="btn btn-outline-dark" href="https://wa.me/${esc(S.whatsapp)}?text=${encodeURIComponent('Hello, about my order ' + o.number)}" target="_blank" rel="noopener">Questions? WhatsApp us</a>` : ''}</div>
+        <div class="checkout-message-actions"><a class="btn btn-dark" href="/shop">Keep browsing</a>${waLink}</div>
       </div>`;
     window.scrollTo({ top: 0, behavior: 'smooth' });
     const copy = root.querySelector('[data-copy]');

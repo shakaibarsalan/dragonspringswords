@@ -11,7 +11,7 @@
 .checkout-form legend { font-family: var(--font-display); font-size: 1.375rem; margin-bottom: 0.25rem; padding: 0; }
 .checkout-form legend small, .checkout-form label small { font-family: var(--font-sans); font-size: var(--text-xs); color: var(--content-subtle); font-weight: 400; margin-left: 0.25rem; }
 .checkout-form label { display: grid; gap: 0.375rem; font-size: var(--text-xs); font-weight: 500; letter-spacing: 0.04em; }
-.checkout-form input:not([type=checkbox]), .checkout-form textarea {
+.checkout-form input:not([type=checkbox]), .checkout-form textarea, .checkout-form select {
   width: 100%;
   min-height: 2.875rem;
   border: 1px solid var(--border);
@@ -22,7 +22,7 @@
   color: var(--content);
 }
 .checkout-form textarea { resize: vertical; }
-.checkout-form input:focus, .checkout-form textarea:focus { outline: none; border-color: var(--ink); box-shadow: 0 0 0 3px rgb(17 18 20 / 0.06); }
+.checkout-form input:focus, .checkout-form textarea:focus, .checkout-form select:focus { outline: none; border-color: var(--ink); box-shadow: 0 0 0 3px rgb(17 18 20 / 0.06); }
 .checkout-form [aria-invalid='true'] { border-color: var(--copper-600) !important; background: #fdf6f3 !important; }
 .co-grid { display: grid; gap: 1rem; }
 @media (min-width: 600px) { .co-grid { grid-template-columns: 1fr 1fr; } .co-grid-3 { grid-template-columns: 2fr 1.4fr 1fr; } }
@@ -67,3 +67,12 @@
 .co-copy { height: 2.25rem; padding-inline: 0.875rem; font-size: var(--text-2xs); }
 .co-bank pre { margin: 0; padding: 1rem 1.25rem; font: 400 0.875rem/1.7 ui-monospace, 'SF Mono', Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--content); }
 .co-next { display: grid; gap: 0.75rem; padding-left: 1.25rem; color: var(--content-muted); font-size: var(--text-sm); }
+
+/* Country rules */
+.checkout-form select { appearance: none; -webkit-appearance: none; padding-right: 2.25rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none' stroke='%23111214' stroke-width='1.5'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 0.875rem center; }
+.checkout-form [hidden] { display: none !important; }
+.co-rules { display: grid; gap: 0.375rem; padding: 0.75rem 1rem; border: 1px solid #ecdcb4; background: #fdf8ec; border-radius: var(--radius-sm); font-size: var(--text-sm); color: var(--content-muted); line-height: 1.5; }
+.co-rules.is-blocked { border-color: #efc9bd; background: #fdf6f3; color: var(--copper-600); }
+.co-submit:disabled { opacity: 0.5; cursor: not-allowed; }
