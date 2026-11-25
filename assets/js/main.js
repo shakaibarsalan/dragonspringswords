@@ -637,6 +637,26 @@
       .map((it) => `<button type="button" class="chip" data-c="${esc(it.slug)}" aria-pressed="false">${esc(it.name)}<span>${it.n}</span></button>`)
       .join('');
 
+    // The chips row scrolls sideways on phones: fade the edge that has more chips,
+    // and slide the chosen chip into view.
+    function chipEdges() {
+      const max = chips.scrollWidth - chips.clientWidth;
+      chips.classList.toggle('can-left', max > 4 && chips.scrollLeft > 4);
+      chips.classList.toggle('can-right', max > 4 && chips.scrollLeft < max - 4);
+    }
+    function revealChip(b, smooth) {
+      if (!b || chips.scrollWidth <= chips.clientWidth + 4) return;
+      const cr = chips.getBoundingClientRect();
+      const br = b.getBoundingClientRect();
+      const pad = 24;
+      let dx = 0;
+      if (br.left < cr.left + pad) dx = br.left - cr.left - pad;
+      else if (br.right > cr.right - pad) dx = br.right - cr.right + pad;
+      if (dx) chips.scrollBy({ left: dx, behavior: smooth && motionSafe ? 'smooth' : 'auto' });
+    }
+    chips.addEventListener('scroll', chipEdges, { passive: true });
+    window.addEventListener('resize', chipEdges);
+
     let first = true;
     function apply(push) {
       const q = state.q.trim().toLowerCase();
@@ -698,6 +718,7 @@
       if (!b) return;
       state.c = b.dataset.c;
       apply(true);
+      revealChip(b, true);
     });
     let t;
     search.addEventListener('input', () => {
@@ -711,6 +732,7 @@
       e.preventDefault();
       state.q = search.value;
       apply(false);
+      search.blur(); // closes the phone keyboard so the results are visible
     });
     sort.addEventListener('change', () => {
       state.sort = sort.value;
@@ -729,6 +751,8 @@
       apply(false);
     });
     apply(false);
+    revealChip($('.chip[aria-pressed="true"]', chips), false);
+    chipEdges();
     if (params.get('focus') === 'search') search.focus();
   }
 
@@ -1109,6 +1133,7 @@
       else header.removeAttribute('data-surface');
       if (y > last && y > 220 && Math.abs(y - last) > 12) header.classList.add('is-hidden');
       else if (y < last) header.classList.remove('is-hidden');
+      document.documentElement.classList.toggle('header-hidden', header.classList.contains('is-hidden'));
       last = y;
     }
     function setMenu(open) {
