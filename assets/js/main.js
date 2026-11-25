@@ -676,8 +676,8 @@
       const cat = categories.find((c) => c.slug === state.c);
       title.textContent = cat ? cat.name : 'All pieces';
       lede.textContent = cat
-        ? `Every piece in ${cat.name.toLowerCase()} we have in the vault right now.`
-        : 'Katanas, swords, kitchen knives and cutlery. Every piece finished and sharpened by hand.';
+        ? cat.intro || `Every piece in ${cat.name.toLowerCase()} we have in the vault right now.`
+        : 'Katanas, swords, knives and axes. Every piece finished and sharpened by hand.';
       // The server already wrote this page's title and description; change them only on later filters.
       if (!(SSR && first)) setMeta(`${cat ? cat.name : 'Shop'} | Dragon Spring Swords`, lede.textContent);
       first = false;
