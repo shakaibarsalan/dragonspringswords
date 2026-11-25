@@ -175,8 +175,13 @@
     if (near || shown <= 2) body.scrollTop = body.scrollHeight;
   }
 
-  async function refresh() {
-    if (!token) return renderStart();
+  async function refresh(first) {
+    // Before a conversation exists there is nothing to poll: draw the start form once, never again
+    // (redrawing it every few seconds wiped what the visitor was typing).
+    if (!token) {
+      if (first || !body.querySelector('.support-start')) renderStart();
+      return;
+    }
     const out = await api('/api/support/thread?token=' + encodeURIComponent(token) + '&visible=' + (document.visibilityState === 'visible' ? 1 : 0));
     if (out && out.status === 404) {
       token = null;
@@ -194,9 +199,9 @@
     isOpen = true;
     document.documentElement.classList.add('support-open');
     if (launcher) launcher.hidden = true;
-    refresh();
+    refresh(true);
     clearInterval(timer);
-    timer = setInterval(() => { if (document.visibilityState === 'visible') refresh(); }, 4000);
+    timer = setInterval(() => { if (token && document.visibilityState === 'visible') refresh(); }, 4000);
     if (token) setTimeout(() => compose.querySelector('textarea').focus(), 50);
   }
 
