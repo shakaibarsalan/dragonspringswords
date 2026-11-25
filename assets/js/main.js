@@ -1372,6 +1372,7 @@
   initMotion();
   initScrollEffects();
   initLookbook();
-  initSmoothScroll();
+  // initSmoothScroll() is kept but switched off: JS-driven wheel scrolling runs on the
+  // main thread and stuttered on the homepage; the browser's own scrolling stays smooth.
   initChat();
 })();
