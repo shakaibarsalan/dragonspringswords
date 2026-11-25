@@ -70,7 +70,7 @@
     <symbol id="i-arrow-down" viewBox="0 0 24 24" ${P}><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></symbol>
     <symbol id="i-arrow-up-right" viewBox="0 0 24 24" ${P}><path d="M7 7h10v10"/><path d="M7 17 17 7"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24" ${P}><path d="M20 6 9 17l-5-5"/></symbol>
-    <symbol id="i-plus" viewBox="0 0 24 24" ${P}><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" ${P}><path d="M5 12h14"/><path d="M12 5v14"/></symbol><symbol id="i-minus" viewBox="0 0 24 24" ${P}><path d="M5 12h14"/></symbol>
     <symbol id="i-mail" viewBox="0 0 24 24" ${P}><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></symbol>
     <symbol id="i-phone" viewBox="0 0 24 24" ${P}><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></symbol>
     <symbol id="i-whatsapp" viewBox="0 0 24 24" ${P}><path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21"/><path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1"/></symbol>
@@ -185,17 +185,22 @@
   const currencyPicker = (extra = '') =>
     `<label class="currency-pick ${extra}"><span class="sr-only">Currency</span><select data-currency aria-label="Currency"></select></label>`;
 
+  /** Header links. "optional" ones give way (highest number first) when the desktop bar is too narrow. */
   function navLinks() {
-    const links = [{ href: '/shop', label: 'Shop all', key: 'shop' }];
-    categories.slice(0, 3).forEach((c) => links.push({ href: catHref(c), label: c.name, key: 'c:' + c.slug }));
-    links.push({ href: '/#story', label: 'Our story', key: 'story' });
+    const links = [{ href: '/shop', label: 'Shop', key: 'shop' }];
+    categories.slice(0, 3).forEach((c, i) => links.push({ href: catHref(c), label: c.name, key: 'c:' + c.slug, optional: i === 2 ? 1 : 0 }));
+    const books = C.lookbooks || [];
+    if (books.length) links.push({ href: books.length === 1 ? books[0].url : '/lookbook', label: 'Lookbook', key: 'lookbook' });
+    links.push({ href: '/#story', label: 'Our story', key: 'story', optional: 2 });
     return links;
   }
 
   function activeKey() {
     if (PAGE === 'shop') return pathSlug('shop', 'c') ? 'c:' + pathSlug('shop', 'c') : 'shop';
+    if (PAGE === 'lookbook') return 'lookbook';
     return '';
   }
+  const overPhoto = PAGE === 'home' || PAGE === 'lookbook';
 
   function announcementHtml() {
     const text = (S.announcement || '').trim();
@@ -225,10 +230,10 @@
     if (top) {
       top.outerHTML = `
       ${announcementHtml()}
-      <header class="site-header${PAGE === 'home' ? ' is-transparent' : ''}" id="site-header"${PAGE === 'home' ? ' data-surface="inverse"' : ''}>
+      <header class="site-header${overPhoto ? ' is-transparent' : ''}" id="site-header"${overPhoto ? ' data-surface="inverse"' : ''}>
         <div class="shell header-row">
           <nav class="primary-nav" aria-label="Primary">
-            ${links.map((l) => `<a class="underline-grow${l.key === key ? ' is-drawn' : ''}" href="${esc(l.href)}"${l.key === key ? ' aria-current="page"' : ''}>${esc(l.label)}</a>`).join('')}
+            ${links.map((l) => `<a class="underline-grow${l.key === key ? ' is-drawn' : ''}" href="${esc(l.href)}"${l.key === key ? ' aria-current="page"' : ''}${l.optional ? ` data-nav-optional="${l.optional}"` : ''}>${esc(l.label)}</a>`).join('')}
           </nav>
           <button type="button" class="menu-toggle" id="menu-open" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu">${icon('menu', 'icon icon-20')}</button>
           <a href="/" class="wordmark" aria-label="Dragon Spring Swords home page"><img class="wordmark-mark" src="/assets/img/brand/logo-mark.webp" alt="" width="44" height="44" decoding="async" /><span>Dragon Spring</span></a>
@@ -754,46 +759,60 @@
     const avg = myReviews.length ? myReviews.reduce((s, r) => s + Number(r.rating || 0), 0) / myReviews.length : 0;
     const pageBlurb = (s) => {
       const pg = pages.find((x) => x.slug === s);
-      if (!pg) return '';
+      if (!pg) return null;
       const first = pg.body.split(/\n\s*\n/).slice(0, 2).join('\n\n');
-      return `<details class="accordion"><summary>${esc(pg.title)}${icon('plus')}</summary><div class="prose">${formatText(first)}<p><a href="${pageUrl(s)}" class="text-link">Read the full page</a></p></div></details>`;
+      return [pg.title, `${formatText(first)}<p><a href="${pageUrl(s)}" class="text-link">Read the full page</a></p>`];
     };
+    const thumbs = p.thumbs || images;
+    const sections = [];
+    if (p.description) sections.push(['Description', formatText(p.description)]);
+    if (p.details && p.details.length) {
+      sections.push(['Specifications', `<dl class="specs">${p.details.map(([k, v]) => (k ? `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>` : `<div class="spec-wide"><dd>${esc(v)}</dd></div>`)).join('')}</dl>`, true]);
+    }
+    ['shipping', 'returns', 'care'].map(pageBlurb).filter(Boolean).forEach((b) => sections.push(b));
 
     root.innerHTML = `
       <div class="shell product-shell">
-        <nav class="crumbs" aria-label="Breadcrumb">
+        <nav class="crumbs reveal is-mount" aria-label="Breadcrumb" style="--distance:8px">
           <a href="/shop">Shop</a>
           ${p.categorySlug ? `<span aria-hidden="true">/</span><a href="${esc(shopUrl(p.categorySlug))}">${esc(p.categoryName)}</a>` : ''}
           <span aria-hidden="true">/</span><span aria-current="page">${esc(p.name)}</span>
         </nav>
         <div class="product-layout">
-          <div class="gallery">
-            <div class="gallery-main" id="gallery-main" tabindex="0" aria-label="Product photos${images.length > 1 ? ', use the arrow keys to change' : ''}">
-              ${images.map((src, i) => `<img src="${esc(src)}" alt="${esc(p.name)}${i ? `, photo ${i + 1}` : ''}" ${i ? 'loading="lazy" hidden' : 'fetchpriority="high"'} />`).join('')}
-              ${images.length > 1 ? `
-                <button type="button" class="gallery-nav prev" aria-label="Previous photo">${icon('arrow-left')}</button>
-                <button type="button" class="gallery-nav next" aria-label="Next photo">${icon('arrow-right')}</button>
-                <span class="gallery-count" id="gallery-count">1 / ${images.length}</span>` : ''}
-            </div>
-            ${images.length > 1 ? `<div class="gallery-thumbs" aria-label="Choose a photo">${(p.thumbs || images)
-              .map((src, i) => `<button type="button" aria-pressed="${i === 0}" data-i="${i}" aria-label="Photo ${i + 1}"><img src="${esc(src)}" alt="" loading="lazy" /></button>`)
+          <div class="gallery${images.length > 1 ? ' has-many' : ''}">
+            ${images.length > 1 ? `<div class="gallery-rail" aria-label="Choose a photo">${thumbs
+              .map((src, i) => `<button type="button"${i === 0 ? ' aria-current="true"' : ''} data-i="${i}" aria-label="Photo ${i + 1} of ${images.length}"><img src="${esc(src)}" alt="" loading="lazy" /></button>`)
               .join('')}</div>` : ''}
+            <div class="gallery-stage">
+              <div class="gallery-frame mask is-mount"><div class="mask-scale">
+                <div class="gallery-track" id="gallery-main" tabindex="0" aria-label="Product photos${images.length > 1 ? ', use the arrow keys to change' : ''}">
+                  ${images.map((src, i) => `<figure class="gallery-slide${i === 0 ? ' is-active' : ''}"><img src="${esc(src)}" alt="${esc(p.name)}${i ? `, photo ${i + 1}` : ''}" ${i ? 'loading="lazy"' : 'fetchpriority="high"'} /></figure>`).join('')}
+                </div>
+              </div></div>
+              ${images.length > 1 ? `
+              <button type="button" class="gallery-nav prev" aria-label="Previous photo">${icon('arrow-left')}</button>
+              <button type="button" class="gallery-nav next" aria-label="Next photo">${icon('arrow-right')}</button>
+              <span class="gallery-count" id="gallery-count">1 / ${images.length}</span>
+              <div class="gallery-dots" aria-hidden="true">${images.map((_, i) => `<span${i === 0 ? ' class="is-active"' : ''}></span>`).join('')}</div>` : ''}
+            </div>
           </div>
 
           <div class="product-info">
-            ${p.categoryName ? `<p class="eyebrow"><a href="${esc(shopUrl(p.categorySlug))}">${esc(p.categoryName)}</a></p>` : ''}
-            <h1 class="display-md">${esc(p.name)}</h1>
-            ${p.subtitle ? `<p class="product-sub">${esc(p.subtitle)}</p>` : ''}
-            ${myReviews.length ? `<a href="#product-reviews" class="rating-line"><span class="stars-inline" aria-hidden="true">${stars(avg)}</span> ${avg.toFixed(1)} · ${myReviews.length} verified review${myReviews.length === 1 ? '' : 's'}</a>` : ''}
-            <div class="product-price-lg${discount > 0 ? ' is-sale' : ''}" data-numeric>
-              ${priceSpan(p.price)}
-              ${discount > 0 ? `<s data-usd="${Number(p.basePrice)}">${formatPrice(p.basePrice)}</s><span class="badge badge-accent">−${discount}%</span>` : ''}
-              ${!inStock ? '<span class="badge badge-dark">Sold out</span>' : p.isNew ? '<span class="badge badge-dark">New</span>' : ''}
+            ${p.categoryName ? `<p class="eyebrow reveal is-mount" style="--distance:10px"><a href="${esc(shopUrl(p.categorySlug))}">${esc(p.categoryName)}</a></p>` : ''}
+            <h1 class="product-title split${p.name.length > 40 ? ' is-long' : ''}" data-split data-mount style="--delay:0.08s">${esc(p.name)}</h1>
+            <div class="product-intro reveal is-mount" style="--delay:0.25s;--distance:14px">
+              ${p.subtitle ? `<p class="product-sub">${esc(p.subtitle)}</p>` : ''}
+              ${myReviews.length ? `<a href="#product-reviews" class="rating-line"><span class="stars-inline" aria-hidden="true">${stars(avg)}</span> ${avg.toFixed(1)} · ${myReviews.length} verified review${myReviews.length === 1 ? '' : 's'}</a>` : ''}
+              <div class="product-price-lg${discount > 0 ? ' is-sale' : ''}" data-numeric>
+                ${priceSpan(p.price)}
+                ${discount > 0 ? `<s data-usd="${Number(p.basePrice)}">${formatPrice(p.basePrice)}</s><span class="badge badge-accent">−${discount}%</span>` : ''}
+                ${!inStock ? '<span class="badge badge-dark">Sold out</span>' : p.isNew ? '<span class="badge badge-dark">New</span>' : ''}
+              </div>
+              <p class="currency-note" hidden>Converted from US dollars at today’s rate. The final amount is confirmed when you order.</p>
             </div>
-            <p class="currency-note" hidden>Converted from US dollars at today’s rate. The final amount is confirmed when you order.</p>
-            ${p.finishes && p.finishes.length > 1 ? `<div class="finish-row"><span>Finishes</span><div class="swatches swatches-lg">${p.finishes.map((h) => `<span style="background:${esc(h)}"></span>`).join('')}</div></div>` : ''}
+            ${p.finishes && p.finishes.length > 1 ? `<div class="finish-row reveal is-mount" style="--delay:0.32s"><span>Finishes</span><div class="swatches swatches-lg">${p.finishes.map((h) => `<span style="background:${esc(h)}"></span>`).join('')}</div></div>` : ''}
 
-            <div class="order-box">
+            <div class="order-box reveal is-mount" style="--delay:0.36s;--distance:14px">
               ${inStock ? `<a class="btn btn-dark btn-block" href="/checkout?p=${encodeURIComponent(p.slug)}" data-buy hidden>Buy now</a>` : ''}
               ${S.whatsapp ? `<a class="btn btn-dark btn-block" id="order-wa" target="_blank" rel="noopener">${icon('whatsapp')} ${inStock ? 'Order on WhatsApp' : 'Ask about availability'}</a>` : ''}
               ${S.email ? `<a class="btn ${S.whatsapp ? 'btn-outline-dark' : 'btn-dark'} btn-block" id="order-mail">${icon('mail')} ${inStock ? 'Email to order' : 'Email about availability'}</a>` : ''}
@@ -805,9 +824,13 @@
               </ul>
             </div>
 
-            ${p.description ? `<div class="prose product-desc">${formatText(p.description)}</div>` : ''}
-            ${p.details && p.details.length ? `<dl class="specs">${p.details.map(([k, v]) => (k ? `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>` : `<div class="spec-wide"><dd>${esc(v)}</dd></div>`)).join('')}</dl>` : ''}
-            <div class="accordions">${pageBlurb('shipping')}${pageBlurb('returns')}${pageBlurb('care')}</div>
+            <div class="product-accordion reveal is-mount" data-accordion style="--delay:0.42s;--distance:14px">
+              ${sections.map(([title, body, isSpecs], i) => `
+              <div class="acc-item${i === 0 ? ' is-open' : ''}">
+                <h2><button type="button" class="acc-head" aria-expanded="${i === 0}" aria-controls="acc-${i + 1}" id="acc-h${i + 1}">${esc(title)}<span class="acc-icon" aria-hidden="true">${icon('plus')}${icon('minus')}</span></button></h2>
+                <div class="acc-panel" id="acc-${i + 1}" role="region" aria-labelledby="acc-h${i + 1}"><div><div class="acc-body${isSpecs ? '' : ' prose'}">${body}</div></div></div>
+              </div>`).join('')}
+            </div>
           </div>
         </div>
       </div>
@@ -858,38 +881,76 @@
     updateOrderLinks();
     document.addEventListener('currencychange', updateOrderLinks);
 
-    // Gallery: thumbnails, arrows, keyboard and swipe.
-    const main = $('#gallery-main');
-    const imgs = $$('img', main);
-    let cur = 0;
-    function go(i) {
-      cur = (i + imgs.length) % imgs.length;
-      imgs.forEach((im, j) => (im.hidden = j !== cur));
-      $$('.gallery-thumbs button').forEach((b, j) => b.setAttribute('aria-pressed', String(j === cur)));
-      const c = $('#gallery-count');
-      if (c) c.textContent = `${cur + 1} / ${imgs.length}`;
-    }
-    if (imgs.length > 1) {
-      $('.gallery-nav.prev', main).addEventListener('click', () => go(cur - 1));
-      $('.gallery-nav.next', main).addEventListener('click', () => go(cur + 1));
-      $$('.gallery-thumbs button').forEach((b) => b.addEventListener('click', () => go(Number(b.dataset.i))));
-      main.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowLeft') go(cur - 1);
-        if (e.key === 'ArrowRight') go(cur + 1);
-      });
-      let x0 = null;
-      main.addEventListener('touchstart', (e) => (x0 = e.touches[0].clientX), { passive: true });
-      main.addEventListener('touchend', (e) => {
-        if (x0 === null) return;
-        const dx = e.changedTouches[0].clientX - x0;
-        if (Math.abs(dx) > 40) go(cur + (dx < 0 ? 1 : -1));
-        x0 = null;
-      });
-    }
+    initGallery();
+    initAccordion($('[data-accordion]', root));
+  }
 
+  /**
+   * Product photos (Nehta's ProductGallery). Desktop: a thumbnail rail beside one
+   * frame that cross-fades. Phones and tablets: a swipeable strip where the next
+   * photo peeks in from the right, with dots underneath.
+   */
+  function initGallery() {
+    const track = $('#gallery-main');
+    if (!track) return;
+    const slides = $$('.gallery-slide', track);
+    const rail = $$('.gallery-rail button');
+    const dots = $$('.gallery-dots span');
+    const count = $('#gallery-count');
+    let cur = 0;
+    const swipes = () => track.scrollWidth > track.clientWidth + 4; // the strip layout is active
+    function mark(i) {
+      cur = i;
+      slides.forEach((el, j) => el.classList.toggle('is-active', j === i));
+      rail.forEach((b, j) => (j === i ? b.setAttribute('aria-current', 'true') : b.removeAttribute('aria-current')));
+      dots.forEach((d, j) => d.classList.toggle('is-active', j === i));
+      if (count) count.textContent = `${i + 1} / ${slides.length}`;
+    }
+    function go(i) {
+      i = (i + slides.length) % slides.length;
+      mark(i);
+      if (swipes()) track.scrollTo({ left: slides[i].offsetLeft - slides[0].offsetLeft, behavior: motionSafe ? 'smooth' : 'auto' });
+    }
+    if (slides.length < 2) return;
+    $('.gallery-nav.prev').addEventListener('click', () => go(cur - 1));
+    $('.gallery-nav.next').addEventListener('click', () => go(cur + 1));
+    rail.forEach((b) => b.addEventListener('click', () => go(Number(b.dataset.i))));
+    track.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') { e.preventDefault(); go(cur - 1); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); go(cur + 1); }
+    });
+    let pending = false;
+    track.addEventListener('scroll', () => {
+      if (pending || !swipes()) return;
+      pending = true;
+      requestAnimationFrame(() => {
+        pending = false;
+        const step = slides[1].offsetLeft - slides[0].offsetLeft || 1;
+        const i = Math.max(0, Math.min(slides.length - 1, Math.round(track.scrollLeft / step)));
+        if (i !== cur) mark(i);
+      });
+    }, { passive: true });
+  }
+
+  /** Nehta's ProductAccordion: one section open at a time, height animated with the 0fr/1fr grid trick. */
+  function initAccordion(box) {
+    if (!box) return;
+    box.classList.add('is-ready'); // without JS every section stays open
+    const items = $$('.acc-item', box);
+    items.forEach((item) => {
+      $('.acc-head', item).addEventListener('click', () => {
+        const open = !item.classList.contains('is-open');
+        items.forEach((x) => {
+          const on = x === item && open;
+          x.classList.toggle('is-open', on);
+          $('.acc-head', x).setAttribute('aria-expanded', String(on));
+        });
+      });
+    });
   }
 
   /* ---------------------------------------------------------------------------
+     INFO PAGES  /* ---------------------------------------------------------------------------
      INFO PAGES (shipping, returns, care, terms, privacy, age policy, contact)
      ------------------------------------------------------------------------ */
   function renderInfo() {
@@ -1017,8 +1078,28 @@
     const openBtn = $('#menu-open');
     const closeBtn = $('#menu-close');
     if (!header) return;
-    const overHero = PAGE === 'home';
+    const overHero = overPhoto;
     let last = window.scrollY;
+
+    // Links on the left must never run under the centred wordmark: drop the
+    // optional ones (Our story first, then the third category) until they fit.
+    const nav = $('.primary-nav', header);
+    const mark = $('.wordmark', header);
+    function fitNav() {
+      if (!nav || !mark) return;
+      const optional = $$('[data-nav-optional]', nav).sort((a, b) => b.dataset.navOptional - a.dataset.navOptional);
+      optional.forEach((a) => (a.hidden = false));
+      if (getComputedStyle(nav).display === 'none') return;
+      const limit = mark.getBoundingClientRect().left - 24;
+      const right = () => Math.max(...$$('a:not([hidden])', nav).map((a) => a.getBoundingClientRect().right));
+      for (const a of optional) {
+        if (right() <= limit) break;
+        a.hidden = true;
+      }
+    }
+    fitNav();
+    window.addEventListener('resize', fitNav);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitNav);
     let menuOpen = false;
     function update() {
       const y = window.scrollY;
@@ -1035,6 +1116,7 @@
       menu.classList.toggle('is-open', open);
       openBtn.setAttribute('aria-expanded', String(open));
       document.body.style.overflow = open ? 'hidden' : '';
+      document.documentElement.classList.toggle('menu-open', open);
       (open ? closeBtn : openBtn).focus();
       update();
     }
@@ -1065,7 +1147,7 @@
   let io = null;
   function observeMotion(root = document) {
     if (!motionSafe) return;
-    const targets = $$('.split:not([data-mount]):not(.is-in), .reveal:not(.is-in), .mask:not(.is-in)', root);
+    const targets = $$('.split:not([data-mount]):not(.is-in), .reveal:not(.is-in):not(.is-mount), .mask:not(.is-in):not(.is-mount)', root);
     if (!('IntersectionObserver' in window)) return targets.forEach((el) => el.classList.add('is-in'));
     if (!io) {
       io = new IntersectionObserver(
@@ -1082,10 +1164,36 @@
     targets.forEach((el) => io.observe(el));
   }
 
+  /**
+   * Shop, info, checkout and 404 pages get the same entrance as the homepage:
+   * the heading rises word by word, the rest fades up as it scrolls into view.
+   */
+  function autoMotion() {
+    const main = $('#main');
+    if (!motionSafe || !main || PAGE === 'home' || PAGE === 'lookbook') return;
+    const h1 = $('h1', main);
+    if (h1 && !h1.classList.contains('split') && !h1.children.length) {
+      h1.classList.add('split');
+      h1.dataset.split = '';
+      h1.dataset.mount = '';
+      h1.style.setProperty('--delay', '0.08s');
+    }
+    const tag = (el, delay, distance) => {
+      if (el.classList.contains('reveal') || el.closest('.reveal')) return;
+      el.classList.add('reveal');
+      el.style.setProperty('--distance', distance);
+      if (delay) el.style.setProperty('--delay', delay);
+    };
+    $$('.crumbs, .shop-lede, .eyebrow', main).forEach((el, i) => tag(el, `${(0.12 + i * 0.05).toFixed(2)}s`, '12px'));
+    $$('.info-aside, .checkout-summary, .shop-tools, .chips', main).forEach((el) => tag(el, '0.2s', '16px'));
+    $$('.prose > *, .contact-card, .checkout-form > *', main).forEach((el) => tag(el, '', '16px'));
+  }
+
   function initMotion() {
+    autoMotion();
     $$('[data-split]').forEach(splitWords);
     if (!motionSafe) return;
-    requestAnimationFrame(() => requestAnimationFrame(() => $$('[data-mount]').forEach((el) => el.classList.add('is-in'))));
+    requestAnimationFrame(() => requestAnimationFrame(() => $$('[data-mount], .is-mount').forEach((el) => el.classList.add('is-in'))));
     observeMotion();
   }
 
@@ -1131,6 +1239,103 @@
     frame();
   }
 
+  /**
+   * Lookbook (Nehta's LookbookExperience): a hairline progress bar across the top,
+   * and the chapter rail on the right marking the look in the middle of the screen.
+   */
+  function initLookbook() {
+    const book = $('.lookbook');
+    if (!book) return;
+    const bar = $('#lookbook-progress');
+    const rail = $('.lookbook-rail');
+    const looks = $$('[data-look]', book);
+    const cover = $('.lookbook-cover', book);
+    if (bar && motionSafe) {
+      let ticking = false;
+      const frame = () => {
+        ticking = false;
+        const max = book.offsetHeight - window.innerHeight;
+        const pr = max > 0 ? Math.min(1, Math.max(0, -book.getBoundingClientRect().top / max)) : 0;
+        bar.style.transform = `scaleX(${pr.toFixed(4)})`;
+        if (rail && cover) rail.classList.toggle('is-shown', cover.getBoundingClientRect().bottom < window.innerHeight * 0.5);
+      };
+      window.addEventListener('scroll', () => {
+        if (!ticking) {
+          ticking = true;
+          requestAnimationFrame(frame);
+        }
+      }, { passive: true });
+      frame();
+    } else if (rail) rail.classList.add('is-shown');
+    if (!rail || !looks.length || !('IntersectionObserver' in window)) return;
+    const links = $$('a', rail);
+    const spy = new IntersectionObserver((entries) => entries.forEach((e) => {
+      if (!e.isIntersecting) return;
+      const i = Number(e.target.dataset.look);
+      links.forEach((a, j) => (j === i ? a.setAttribute('aria-current', 'true') : a.removeAttribute('aria-current')));
+    }), { rootMargin: '-45% 0px -45% 0px' });
+    looks.forEach((el) => spy.observe(el));
+  }
+
+  /**
+   * Smooth wheel scrolling, Lenis's feel (Nehta's SmoothScroll: 1.1 s, exponential
+   * ease-out). Mouse wheels and trackpads only; touch keeps the phone's own
+   * scrolling, and visitors who ask for reduced motion get the browser's default.
+   */
+  function initSmoothScroll() {
+    if (!motionSafe || window.matchMedia('(pointer: coarse)').matches) return;
+    const DURATION = 1100;
+    const ease = (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t));
+    let target = window.scrollY;
+    let from = target;
+    let start = 0;
+    let raf = 0;
+    let running = false;
+    const maxY = () => document.documentElement.scrollHeight - window.innerHeight;
+    function step(now) {
+      const t = Math.min(1, (now - start) / DURATION);
+      window.scrollTo({ top: from + (target - from) * ease(t), behavior: 'instant' });
+      if (t < 1) raf = requestAnimationFrame(step);
+      else running = false;
+    }
+    function scrollsItself(el) {
+      for (; el && el !== document.body && el !== document.documentElement; el = el.parentElement) {
+        if (el.scrollHeight > el.clientHeight + 1) {
+          const o = getComputedStyle(el).overflowY;
+          if (o === 'auto' || o === 'scroll') return true;
+        }
+      }
+      return false;
+    }
+    window.addEventListener('wheel', (e) => {
+      if (e.ctrlKey || e.defaultPrevented || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+      if (document.body.style.overflow === 'hidden' || scrollsItself(e.target)) return;
+      e.preventDefault();
+      let d = e.deltaY;
+      if (e.deltaMode === 1) d *= 40;
+      else if (e.deltaMode === 2) d *= window.innerHeight;
+      if (!running) target = window.scrollY;
+      target = Math.max(0, Math.min(maxY(), target + d));
+      from = window.scrollY;
+      start = performance.now();
+      if (!running) {
+        running = true;
+        raf = requestAnimationFrame(step);
+      }
+    }, { passive: false });
+    // Keys, the scrollbar, links to #anchors and touch take over straight away.
+    const stop = () => {
+      if (running) {
+        cancelAnimationFrame(raf);
+        running = false;
+      }
+    };
+    ['keydown', 'mousedown', 'touchstart'].forEach((ev) => window.addEventListener(ev, stop, { passive: true }));
+    document.addEventListener('click', (e) => {
+      if (e.target.closest && e.target.closest('a[href*="#"]')) stop();
+    });
+  }
+
   /* ---------------------------------------------------------------------------
      LIVE CHAT, HaloChime widget, switched on from the admin's settings
      ------------------------------------------------------------------------ */
@@ -1166,5 +1371,7 @@
   initHeader();
   initMotion();
   initScrollEffects();
+  initLookbook();
+  initSmoothScroll();
   initChat();
 })();

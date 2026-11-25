@@ -76,3 +76,10 @@
 .co-rules { display: grid; gap: 0.375rem; padding: 0.75rem 1rem; border: 1px solid #ecdcb4; background: #fdf8ec; border-radius: var(--radius-sm); font-size: var(--text-sm); color: var(--content-muted); line-height: 1.5; }
 .co-rules.is-blocked { border-color: #efc9bd; background: #fdf6f3; color: var(--copper-600); }
 .co-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Phones: long option text (country names) must not widen the form past the screen. */
+.checkout-layout, .checkout-form, .co-grid { grid-template-columns: minmax(0, 1fr); }
+.checkout-layout > *, .checkout-form > *, .co-grid > * { min-width: 0; }
+.checkout-form label > input:not([type=checkbox]):not([type=radio]), .checkout-form label > select, .checkout-form label > textarea { min-width: 0; width: 100%; max-width: 100%; }
+@media (min-width: 600px) { .co-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .co-grid-3 { grid-template-columns: minmax(0, 2fr) minmax(0, 1.4fr) minmax(0, 1fr); } }
+@media (min-width: 960px) { .checkout-layout { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); } }

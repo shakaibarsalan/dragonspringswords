@@ -313,33 +313,36 @@ address { font-style: normal; }
   gap: 1.5rem;
 }
 
-.primary-nav { display: none; flex: 1; align-items: center; gap: 2rem; }
-.primary-nav a { font-size: var(--text-xs); letter-spacing: 0.14em; text-transform: uppercase; }
-@media (min-width: 1200px) {
-  .primary-nav { display: flex; justify-content: center; gap: 1.75rem; }
-  .header-row .wordmark { position: static; transform: none; order: -1; }
-  .header-actions { flex: 0 0 auto; }
+/* Nehta's layout: links on the left, the wordmark optically centred, icons on
+   the right. Below 1180px the links move into the menu (button on the left). */
+.primary-nav { display: none; flex: 1; min-width: 0; align-items: center; gap: 1.5rem; }
+.primary-nav a { font-size: var(--text-xs); letter-spacing: 0.12em; text-transform: uppercase; white-space: nowrap; }
+.primary-nav a[hidden] { display: none; }
+@media (min-width: 1180px) {
+  .primary-nav { display: flex; }
+}
+@media (min-width: 1180px) and (max-width: 1439px) {
+  .primary-nav { gap: 1rem; }
+  .primary-nav a { font-size: var(--text-2xs); letter-spacing: 0.1em; }
 }
 
-.menu-toggle { margin-left: -0.5rem; padding: 0.5rem; display: inline-flex; }
-@media (min-width: 1200px) { .menu-toggle { display: none; } }
+.menu-toggle { margin-left: -0.5rem; padding: 0.5rem; display: inline-flex; flex: 1; justify-content: flex-start; }
+@media (min-width: 1180px) { .menu-toggle { display: none; } }
 
 .wordmark {
   font-family: var(--font-display);
-  font-size: 1.5rem;
+  font-size: 1.3125rem;
   line-height: 1;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
   white-space: nowrap;
 }
-/* "Dragon Spring" is longer than "Nehta": tighter on phones so the bag icon fits. */
+/* "Dragon Spring" is longer than "Nehta": tighter on phones so the icons fit. */
 @media (max-width: 767px) {
-  .wordmark { font-size: 1.0625rem; letter-spacing: 0.12em; }
-  .header-row { gap: 0.75rem; }
+  .wordmark { font-size: 1rem; letter-spacing: 0.14em; }
+  .header-row { gap: 0.5rem; }
 }
-@media (min-width: 768px) {
-  .header-row .wordmark { position: absolute; left: 50%; transform: translateX(-50%); }
-}
+.header-row .wordmark { position: absolute; left: 50%; transform: translateX(-50%); }
 
 .header-actions { display: flex; flex: 1; align-items: center; justify-content: flex-end; gap: 0.25rem; }
 .icon-link {
@@ -409,7 +412,7 @@ address { font-style: normal; }
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
-@media (min-width: 1200px) { .mobile-menu { display: none; } }
+@media (min-width: 1180px) { .mobile-menu { display: none; } }
 
 /* =============================================================================
    HERO
@@ -1068,92 +1071,120 @@ main[id] { min-height: 50vh; }
 /* =============================================================================
    PRODUCT
    ========================================================================== */
-.product-shell { padding-top: 2rem; }
-.product-layout { margin-top: 1.5rem; display: grid; gap: 2.5rem; }
-@media (min-width: 900px) {
-  .product-layout { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 4rem; align-items: start; }
+.product-shell { padding-top: 1.5rem; }
+@media (min-width: 768px) { .product-shell { padding-top: 2.5rem; } }
+.product-layout { margin-top: 1.5rem; display: grid; gap: 2rem; }
+@media (min-width: 1024px) {
+  .product-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 4rem; align-items: start; }
   .gallery { position: sticky; top: calc(var(--header-h) + 1.5rem); }
 }
-.gallery { display: grid; gap: 0.75rem; }
-.gallery-main { position: relative; aspect-ratio: 4 / 5; overflow: hidden; background: var(--sand-100); border-radius: var(--radius-sm); }
-.gallery-main img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.gallery-main img[hidden] { display: none; }
-.gallery-nav {
-  position: absolute;
-  top: 50%;
-  translate: 0 -50%;
-  display: grid;
-  place-items: center;
-  width: 2.75rem;
-  height: 2.75rem;
-  border-radius: 999px;
-  background: rgb(250 248 244 / 0.85);
-  color: var(--ink);
-  backdrop-filter: blur(4px);
-  opacity: 0.9;
-  transition: opacity var(--duration-quick), background-color var(--duration-quick);
-}
-.gallery-nav:hover { opacity: 1; background: var(--paper); }
-.gallery-nav.prev { left: 0.75rem; }
-.gallery-nav.next { right: 0.75rem; }
-.gallery-count {
-  position: absolute;
-  right: 0.75rem;
-  bottom: 0.75rem;
-  padding: 0.25rem 0.5rem;
-  border-radius: var(--radius-xs);
-  background: rgb(17 18 20 / 0.6);
-  color: var(--paper);
-  font-size: var(--text-2xs);
-  letter-spacing: 0.1em;
-}
-.gallery-thumbs { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0.5rem; }
-.gallery-thumbs button { aspect-ratio: 3 / 4; overflow: hidden; border-radius: var(--radius-xs); opacity: 0.55; outline-offset: 2px; transition: opacity var(--duration-quick); }
-.gallery-thumbs button:hover, .gallery-thumbs button[aria-pressed='true'] { opacity: 1; }
-.gallery-thumbs button[aria-pressed='true'] { box-shadow: 0 0 0 1.5px var(--ink); }
-.gallery-thumbs img { width: 100%; height: 100%; object-fit: cover; }
+@media (min-width: 1280px) { .product-layout { gap: 5rem; } }
 
-.product-info { display: grid; gap: 1rem; align-content: start; }
+/* Gallery (Nehta's ProductGallery): phones swipe a strip where the next photo
+   peeks in; from 1024px a thumbnail rail sits beside one frame that is sized to
+   fit the screen, so the whole photo and every thumbnail are visible at once. */
+.gallery { display: flex; gap: 1rem; min-width: 0; }
+.gallery-stage { position: relative; flex: 1; min-width: 0; }
+.gallery-frame { overflow: hidden; }
+.gallery-track {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.gallery-track::-webkit-scrollbar { display: none; }
+.gallery-slide {
+  position: relative;
+  margin: 0;
+  flex: 0 0 100%;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  background: var(--sand-100);
+  border-radius: var(--radius-sm);
+  scroll-snap-align: start;
+}
+.gallery.has-many .gallery-slide { flex-basis: 86%; }
+/* Tablets: smaller photos, so the next one (and the price below) stay in view. */
+@media (min-width: 600px) and (max-width: 1023px) {
+  .gallery-slide, .gallery.has-many .gallery-slide { flex-basis: min(58%, 26rem); }
+  .gallery:not(.has-many) .gallery-track { justify-content: center; }
+}
+.gallery-slide img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.gallery-dots { margin-top: 0.875rem; display: flex; justify-content: center; gap: 0.375rem; }
+.gallery-dots span { width: 0.25rem; height: 0.25rem; border-radius: 999px; background: var(--sand-400); transition: width var(--duration-base) var(--ease-editorial), background-color var(--duration-base); }
+.gallery-dots span.is-active { width: 1.25rem; background: var(--ink); }
+.gallery-nav, .gallery-count, .gallery-rail { display: none; }
+
+@media (min-width: 1024px) {
+  .gallery-rail { display: flex; flex-direction: column; gap: 0.625rem; width: 5rem; flex-shrink: 0; max-height: calc(100svh - var(--header-h) - 3rem); overflow-y: auto; scrollbar-width: none; }
+  .gallery-rail::-webkit-scrollbar { display: none; }
+  .gallery-rail button { position: relative; flex-shrink: 0; aspect-ratio: 3 / 4; overflow: hidden; background: var(--sand-100); border-radius: var(--radius-xs); opacity: 0.55; transition: opacity var(--duration-quick); }
+  .gallery-rail button:hover { opacity: 0.85; }
+  .gallery-rail button[aria-current='true'] { opacity: 1; }
+  .gallery-rail button[aria-current='true']::after { content: ''; position: absolute; inset: 0; border: 1px solid var(--ink); border-radius: inherit; }
+  .gallery-rail img { width: 100%; height: 100%; object-fit: cover; }
+
+  /* one frame, cross-fading; never taller than the screen */
+  .gallery-stage { flex: 0 1 auto; width: min(100%, calc((100svh - var(--header-h) - 3rem) * 0.8)); }
+  .gallery-track { display: grid; overflow: hidden; scroll-snap-type: none; }
+  .gallery-slide,
+  .gallery.has-many .gallery-slide { grid-area: 1 / 1; opacity: 0; visibility: hidden; transition: opacity var(--duration-base) var(--ease-inout), visibility 0s linear var(--duration-base); }
+  .gallery .gallery-slide.is-active { opacity: 1; visibility: visible; transition: opacity var(--duration-base) var(--ease-inout), visibility 0s; }
+  .gallery-dots { display: none; }
+  .gallery-nav { position: absolute; top: 50%; translate: 0 -50%; display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border-radius: 999px; background: rgb(250 248 244 / 0.85); color: var(--ink); backdrop-filter: blur(4px); opacity: 0; transition: opacity var(--duration-quick), background-color var(--duration-quick); }
+  .gallery-stage:hover .gallery-nav, .gallery-nav:focus-visible { opacity: 0.9; }
+  .gallery-nav:hover { opacity: 1; background: var(--paper); }
+  .gallery-nav.prev { left: 0.75rem; }
+  .gallery-nav.next { right: 0.75rem; }
+  .gallery-count { position: absolute; right: 0.75rem; bottom: 0.75rem; display: block; padding: 0.25rem 0.625rem; border-radius: 999px; background: rgb(17 18 20 / 0.55); color: var(--paper); font-size: var(--text-2xs); letter-spacing: 0.08em; font-variant-numeric: tabular-nums; }
+}
+
+/* Right column (Nehta's ProductDetailView) */
+.product-info { display: grid; gap: 1rem; align-content: start; min-width: 0; }
+@media (min-width: 1024px) { .product-info { padding-top: 0.5rem; } }
 .product-info .eyebrow a:hover { color: var(--content); }
-.product-sub { color: var(--content-muted); font-size: var(--text-lg); margin-top: -0.25rem; }
+.product-title { font-family: var(--font-display); font-size: clamp(1.875rem, 3.2vw, 2.75rem); line-height: 1.06; letter-spacing: -0.02em; overflow-wrap: anywhere; }
+.product-title.is-long { font-size: clamp(1.625rem, 2.3vw, 2.125rem); line-height: 1.12; }
+.product-intro { display: grid; gap: 0.75rem; }
+.product-sub { color: var(--content-muted); font-size: var(--text-base); }
 .rating-line { display: inline-flex; align-items: center; gap: 0.5rem; font-size: var(--text-sm); color: var(--content-muted); }
-.stars-inline { color: var(--accent); letter-spacing: 0.1em; }
-.product-price-lg { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.75rem; font-size: 1.5rem; margin-top: 0.25rem; }
+.product-price-lg { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.625rem; font-size: 1.25rem; }
 .product-price-lg.is-sale > span:first-child { color: var(--accent); }
-.product-price-lg s { font-size: var(--text-base); color: var(--content-subtle); }
+.product-price-lg s { font-size: var(--text-sm); color: var(--content-subtle); }
 .product-price-lg .badge { align-self: center; }
-.product-info .currency-note { margin-top: -0.5rem; }
+.product-info .currency-note { margin-top: 0; }
 .finish-row { display: flex; align-items: center; gap: 1rem; font-size: var(--text-xs); letter-spacing: 0.1em; text-transform: uppercase; color: var(--content-subtle); }
-.swatches-lg { margin: 0; }
-.swatches-lg span { width: 1.125rem; height: 1.125rem; }
-.order-box { display: grid; gap: 0.625rem; padding: 1.25rem; margin-top: 0.5rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); background: #fff; }
+
+/* Order buttons, flat like Nehta's "Add to bag" block */
+.order-box { display: grid; gap: 0.625rem; margin-top: 0.75rem; }
 .order-note { font-size: var(--text-sm); color: var(--content-muted); margin-top: 0.25rem; }
-.order-points { display: grid; gap: 0.5rem; margin-top: 0.5rem; padding-top: 0.875rem; border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--content-muted); }
+.order-points { display: grid; gap: 0.5rem; margin-top: 0.75rem; padding-top: 1rem; border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--content-muted); }
 .order-points li { display: flex; align-items: center; gap: 0.625rem; }
 .order-points .icon-sm { color: var(--accent); }
-.product-desc { margin-top: 0.75rem; }
-.specs { margin: 0.5rem 0 0; border-top: 1px solid var(--border-subtle); }
-.specs div { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 1rem; padding-block: 0.75rem; border-bottom: 1px solid var(--border-subtle); font-size: var(--text-sm); }
+
+/* Accordion (Nehta's ProductAccordion): grid rows 0fr -> 1fr animate the height */
+.product-accordion { margin-top: 1.5rem; border-top: 1px solid var(--border-subtle); }
+.acc-item { border-bottom: 1px solid var(--border-subtle); }
+.acc-item h2 { margin: 0; font: inherit; }
+.acc-head { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 1rem; padding-block: 1.25rem; text-align: left; font-size: var(--text-xs); letter-spacing: 0.12em; text-transform: uppercase; }
+.acc-icon { position: relative; width: 1rem; height: 1rem; color: var(--content-subtle); flex-shrink: 0; }
+.acc-icon .icon-sm { position: absolute; inset: 0; width: 1rem; height: 1rem; transition: opacity var(--duration-quick); }
+.acc-icon .icon-sm + .icon-sm, .acc-item.is-open .acc-icon .icon-sm:first-child { opacity: 0; }
+.acc-item.is-open .acc-icon .icon-sm + .icon-sm { opacity: 1; }
+.acc-panel { display: grid; grid-template-rows: 1fr; transition: grid-template-rows var(--duration-base) var(--ease-editorial); }
+.product-accordion.is-ready .acc-item:not(.is-open) .acc-panel { grid-template-rows: 0fr; }
+.acc-panel > div { overflow: hidden; min-height: 0; }
+.acc-body { padding-bottom: 1.5rem; font-size: var(--text-sm); line-height: 1.7; color: var(--content-muted); }
+.product-accordion.is-ready .acc-item:not(.is-open) .acc-panel > div { visibility: hidden; transition: visibility 0s linear var(--duration-base); }
+.specs { margin: 0; }
+.specs div { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 1rem; padding-block: 0.625rem; border-bottom: 1px solid var(--border-subtle); }
+.specs div:last-child { border-bottom: 0; }
 .specs dt { color: var(--content-subtle); }
-.specs dd { margin: 0; }
+.specs dd { margin: 0; color: var(--content); }
 .specs .spec-wide { grid-template-columns: 1fr; }
-.accordions { margin-top: 0.5rem; }
-.accordion { border-bottom: 1px solid var(--border-subtle); }
-.accordion summary {
-  list-style: none;
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-block: 1rem;
-  font-size: var(--text-xs);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-.accordion summary::-webkit-details-marker { display: none; }
-.accordion summary .icon-sm { transition: transform var(--duration-base) var(--ease-editorial); }
-.accordion[open] summary .icon-sm { transform: rotate(45deg); }
-.accordion .prose { padding-bottom: 1.25rem; font-size: var(--text-sm); }
 
 .review-cards { margin-top: 2rem; display: grid; gap: 1rem; }
 @media (min-width: 768px) { .review-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
@@ -1200,15 +1231,6 @@ main[id] { min-height: 50vh; }
 a.contact-card:hover { border-color: var(--ink); }
 .contact-card .icon { color: var(--accent); width: 22px; height: 22px; }
 .contact-card strong { display: block; font-weight: 500; color: var(--content); font-size: var(--text-xs); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.125rem; }
-
-/* Wide screens: logo left, links centred, actions right (comes last so it
-   overrides the centred-logo rule used on tablets). */
-@media (min-width: 1200px) {
-  .header-row .wordmark { position: static; transform: none; order: -1; flex-shrink: 0; }
-  .primary-nav { flex: 1; justify-content: center; }
-}
-.primary-nav a { white-space: nowrap; }
-@media (min-width: 1200px) and (max-width: 1359px) { .primary-nav { gap: 1.25rem; } }
 
 /* Brand mark: the gold dragon medallion beside the wordmark (header and menu). */
 .wordmark { display: inline-flex; align-items: center; gap: 0.75rem; }
@@ -1265,6 +1287,7 @@ a.contact-card:hover { border-color: var(--ink); }
   text-transform: uppercase; box-shadow: 0 12px 30px -8px rgb(17 18 20 / 0.45); }
 .support-launcher.is-pill { bottom: 5.75rem; padding: 0.625rem 1rem; }
 .support-launcher[hidden] { display: none; }
+.menu-open .support-launcher { visibility: hidden; }
 .support-dot { display: inline-block; width: 0.5rem; height: 0.5rem; margin-left: 0.5rem; border-radius: 50%; background: var(--accent); vertical-align: middle; }
 .support-dot[hidden] { display: none; }
 
@@ -1272,3 +1295,103 @@ a.contact-card:hover { border-color: var(--ink); }
 .support-code input[name=code] { font: 500 1.5rem/1.2 ui-monospace, 'SF Mono', Menlo, monospace; letter-spacing: 0.4em; text-align: center; }
 .support-error.is-ok { color: var(--content-muted); background: var(--sand-100); }
 .support-intro p + p { margin-top: 0.5rem; }
+
+/* =============================================================================
+   LOOKBOOK (Nehta's LookbookExperience and /lookbook index)
+   Dark editorial page; the header floats transparent over the cover.
+   ========================================================================== */
+.lookbook-main { position: relative; }
+.lookbook { position: relative; background: var(--ink); color: var(--paper); margin-top: calc(var(--header-h) * -1); }
+.lookbook .eyebrow { color: rgb(250 248 244 / 0.55); }
+.lookbook-progress { position: fixed; inset: 0 0 auto; z-index: 55; height: 1px; background: rgb(250 248 244 / 0.6); transform-origin: left; transform: scaleX(0); pointer-events: none; }
+
+.lookbook-cover { position: relative; display: flex; min-height: 92svh; align-items: flex-end; overflow: hidden; isolation: isolate; }
+.lookbook-cover-img { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; }
+.lookbook-cover-scrim { position: absolute; inset: 0; z-index: -1; background: linear-gradient(to top, var(--ink) 0%, rgb(17 18 20 / 0.4) 50%, rgb(17 18 20 / 0.2) 100%); }
+.lookbook-cover-copy { padding-bottom: 4rem; }
+@media (min-width: 768px) { .lookbook-cover-copy { padding-bottom: 6rem; } }
+.lookbook-title { margin-top: 1rem; display: block; font-family: var(--font-display); font-size: clamp(3rem, 11vw, 9rem); line-height: 0.9; letter-spacing: -0.03em; overflow-wrap: anywhere; }
+.lookbook-intro { margin-top: 1.75rem; max-width: 36rem; font-size: var(--text-lg); line-height: 1.6; color: rgb(250 248 244 / 0.7); }
+
+/* Chapter rail: desktop only; on phones the scroll is the navigation */
+.lookbook-rail { display: none; }
+@media (min-width: 1024px) {
+  .lookbook-rail { position: fixed; right: 2rem; top: 50%; z-index: 40; display: flex; flex-direction: column; gap: 0.75rem; transform: translateY(-50%); pointer-events: none; opacity: 0; transition: opacity var(--duration-base); }
+  .lookbook-rail.is-shown { opacity: 1; }
+  .lookbook-rail a { pointer-events: auto; display: flex; align-items: center; justify-content: flex-end; gap: 0.75rem; padding-block: 0.125rem; }
+  .lookbook-rail span { font-size: var(--text-2xs); font-variant-numeric: tabular-nums; opacity: 0; transition: opacity var(--duration-base); }
+  .lookbook-rail i { display: block; height: 1px; width: 1rem; background: rgb(250 248 244 / 0.35); transition: width var(--duration-base) var(--ease-editorial), background-color var(--duration-base); }
+  .lookbook-rail a:hover span { opacity: 0.6; }
+  .lookbook-rail a:hover i { background: rgb(250 248 244 / 0.7); }
+  .lookbook-rail a[aria-current='true'] span { opacity: 1; }
+  .lookbook-rail a[aria-current='true'] i { width: 2rem; background: var(--paper); }
+}
+
+/* One look: photo and words, alternating sides */
+.look { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2rem; padding-block: 3.5rem; scroll-margin-top: 6rem; }
+@media (min-width: 768px) {
+  .look { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 3rem; padding-block: 6rem; align-items: center; }
+  .look-media { grid-column: 1 / span 7; }
+  .look-copy { grid-column: 9 / span 4; }
+  .look.is-flipped .look-media { grid-column: 6 / span 7; order: 2; }
+  .look.is-flipped .look-copy { grid-column: 1 / span 4; order: 1; }
+}
+.look-media, .look-copy { min-width: 0; }
+.look-frame { position: relative; aspect-ratio: 3 / 4; overflow: hidden; background: var(--sand-900); }
+@media (min-width: 768px) { .look-frame { aspect-ratio: 4 / 5; } }
+/* Swords are usually photographed wide: keep the photo's own shape so the blade is not cut off. */
+.look-frame.is-wide { aspect-ratio: 3 / 2; }
+.look-frame.is-square { aspect-ratio: 1 / 1; }
+.look-parallax { position: absolute; inset: -10% 0; will-change: transform; }
+.look-frame.is-wide .look-parallax, .look-frame.is-square .look-parallax { inset: -16% 0; }
+.look-parallax img { width: 100%; height: 100%; object-fit: cover; }
+.look-num { font-size: var(--text-2xs); letter-spacing: 0.2em; font-variant-numeric: tabular-nums; color: rgb(250 248 244 / 0.4); }
+.look-title { margin-top: 0.75rem; display: block; }
+.look-caption { margin-top: 1rem; line-height: 1.7; color: rgb(250 248 244 / 0.65); }
+.look-location { margin-top: 1rem; display: inline-flex; align-items: center; gap: 0.375rem; font-size: var(--text-xs); color: rgb(250 248 244 / 0.4); }
+.look-products { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid rgb(250 248 244 / 0.12); }
+.look-products .eyebrow { color: rgb(250 248 244 / 0.4); }
+.look-products ul { margin-top: 1rem; display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.75rem; }
+.look-products li { min-width: 0; }
+.look-product { display: flex; align-items: center; gap: 0.875rem; }
+.look-product-img { position: relative; width: 3.5rem; height: 3.5rem; flex-shrink: 0; overflow: hidden; background: var(--sand-800); }
+.look-product-img img { width: 100%; height: 100%; object-fit: cover; transition: transform var(--duration-slow) var(--ease-editorial); }
+.look-product:hover .look-product-img img { transform: scale(1.05); }
+.look-product-text { min-width: 0; flex: 1; }
+.look-product-name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-sm); color: rgb(250 248 244 / 0.85); transition: color var(--duration-quick); }
+.look-product:hover .look-product-name { color: var(--paper); }
+.look-product-price { display: block; font-size: var(--text-xs); color: rgb(250 248 244 / 0.45); }
+.look-product > .icon-sm { width: 1rem; height: 1rem; flex-shrink: 0; color: rgb(250 248 244 / 0.3); transition: color var(--duration-quick), transform var(--duration-quick); }
+.look-product:hover > .icon-sm { color: var(--paper); transform: translate(2px, -2px); }
+
+.lookbook-end { padding-block: 6rem; text-align: center; }
+@media (min-width: 768px) { .lookbook-end { padding-block: 9rem; } }
+.lookbook-end .display-sm { margin: 1.25rem auto 0; max-width: 32rem; display: block; }
+.lookbook-cta { margin-top: 2rem; display: inline-flex; align-items: center; gap: 0.5rem; font-size: var(--text-xs); letter-spacing: 0.14em; text-transform: uppercase; color: rgb(250 248 244 / 0.7); transition: color var(--duration-quick); }
+.lookbook-cta:hover { color: var(--paper); }
+.lookbook-cta .icon-sm { transition: transform var(--duration-quick); }
+.lookbook-cta:hover .icon-sm { transform: translate(2px, -2px); }
+
+/* Index: every lookbook as a large card */
+.lookbook-index { padding-bottom: 6rem; }
+.lookbook-index-head { padding-top: calc(var(--header-h) + 5rem); padding-bottom: 3.5rem; }
+@media (min-width: 768px) { .lookbook-index-head { padding-top: calc(var(--header-h) + 7rem); padding-bottom: 5rem; } }
+.lookbook-cards { display: grid; gap: 1.5rem; }
+@media (min-width: 768px) { .lookbook-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2rem; } }
+.lookbook-card { display: block; }
+.lookbook-card-frame { position: relative; aspect-ratio: 4 / 5; overflow: hidden; background: var(--sand-900); }
+.lookbook-card-frame img { width: 100%; height: 100%; object-fit: cover; opacity: 0.85; transition: transform 1.2s var(--ease-editorial), opacity 1.2s var(--ease-editorial); }
+.lookbook-card:hover .lookbook-card-frame img { transform: scale(1.03); opacity: 1; }
+.lookbook-card-scrim { position: absolute; inset: 0; background: linear-gradient(to top, rgb(17 18 20 / 0.8), transparent 55%); }
+.lookbook-card-copy { position: absolute; inset: auto 0 0; display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; padding: 1.75rem; }
+.lookbook-card-season { font-size: var(--text-2xs); letter-spacing: 0.16em; text-transform: uppercase; color: rgb(250 248 244 / 0.55); }
+.lookbook-card-title { margin-top: 0.5rem; font-family: var(--font-display); font-size: clamp(2.25rem, 4vw, 3rem); line-height: 1; }
+.lookbook-card-count { margin-top: 0.5rem; font-size: var(--text-xs); color: rgb(250 248 244 / 0.45); }
+.lookbook-card-arrow { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; flex-shrink: 0; border-radius: 999px; border: 1px solid rgb(250 248 244 / 0.3); transition: background-color var(--duration-base), color var(--duration-base), border-color var(--duration-base); }
+.lookbook-card:hover .lookbook-card-arrow { border-color: var(--paper); background: var(--paper); color: var(--ink); }
+
+/* Laptops (1180 to 1439px): a slightly smaller lockup so all the links fit beside it. */
+@media (min-width: 1180px) and (max-width: 1439px) {
+  .header-row .wordmark { font-size: 1.125rem; letter-spacing: 0.18em; gap: 0.625rem; }
+  .header-row .wordmark-mark { width: 2.375rem; height: 2.375rem; }
+}
