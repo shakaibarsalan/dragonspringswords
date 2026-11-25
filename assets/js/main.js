@@ -1228,7 +1228,7 @@
     const media = $('#hero-media');
     const copy = $('#hero-copy');
     const scrim = $('#hero-scrim');
-    const cue = $('#scroll-cue');
+    const cue = $('#hero-slides-ui');
     const parallaxEls = $$('[data-parallax]');
     if (!hero && !parallaxEls.length) return;
     let ticking = false;
@@ -1361,6 +1361,76 @@
     });
   }
 
+  /**
+   * Homepage hero: the emblem render and three of Hadi's pieces cross-fade every few seconds.
+   * Pictures after the first load only when their turn is near. It pauses while the hero is off
+   * screen or the tab is hidden, and never moves on its own for visitors who asked for less motion
+   * (the bars still switch pictures).
+   */
+  function initHeroSlides() {
+    const media = $('#hero-media');
+    const ui = $('#hero-slides-ui');
+    if (!media || !ui) return;
+    const slides = $$('.hero-slide', media);
+    const bars = $$('.hero-bar', ui);
+    const caption = $('#hero-caption');
+    if (slides.length < 2) return;
+    const MS = 6500;
+    ui.style.setProperty('--slide-ms', MS + 'ms');
+    let cur = 0;
+    let timer = 0;
+    let visible = true;
+
+    const load = (slide) => {
+      const img = $('img', slide);
+      if (img && img.dataset.src) {
+        if (img.dataset.srcset) img.srcset = img.dataset.srcset;
+        img.src = img.dataset.src;
+        delete img.dataset.src;
+        delete img.dataset.srcset;
+      }
+      return img;
+    };
+    const ready = (img) => (!img || img.complete ? Promise.resolve() : new Promise((r) => { img.onload = img.onerror = r; }));
+    const label = (slide) => (slide.dataset.href
+      ? `<span class="hero-caption-pre">In the photo: </span><a href="${esc(slide.dataset.href)}">${esc(slide.dataset.caption)}</a>`
+      : esc(slide.dataset.caption || ''));
+
+    function play() {
+      clearTimeout(timer);
+      const on = motionSafe && visible && !document.hidden;
+      ui.classList.toggle('is-playing', on);
+      if (on) timer = setTimeout(() => show(cur + 1), MS);
+    }
+    async function show(i) {
+      i = (i + slides.length) % slides.length;
+      clearTimeout(timer);
+      await ready(load(slides[i]));
+      slides.forEach((s, j) => s.classList.toggle('is-active', j === i));
+      bars.forEach((b, j) => {
+        b.classList.toggle('is-active', j === i);
+        if (j === i) b.setAttribute('aria-current', 'true');
+        else b.removeAttribute('aria-current');
+      });
+      ui.classList.remove('is-playing');
+      void ui.offsetWidth; // restart the progress line on the new bar
+      caption.innerHTML = label(slides[i]);
+      cur = i;
+      load(slides[(i + 1) % slides.length]); // fetch the next one in good time
+      play();
+    }
+
+    bars.forEach((b, j) => b.addEventListener('click', () => show(j)));
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(([e]) => { visible = e.isIntersecting; play(); }).observe($('#hero'));
+    }
+    document.addEventListener('visibilitychange', play);
+    caption.innerHTML = label(slides[0]);
+    // the second picture loads once the page has settled
+    window.addEventListener('load', () => load(slides[1]), { once: true });
+    play();
+  }
+
   /* ---------------------------------------------------------------------------
      LIVE CHAT, HaloChime widget, switched on from the admin's settings
      ------------------------------------------------------------------------ */
@@ -1396,6 +1466,7 @@
   initHeader();
   initMotion();
   initScrollEffects();
+  initHeroSlides();
   initLookbook();
   // initSmoothScroll() is kept but switched off: JS-driven wheel scrolling runs on the
   // main thread and stuttered on the homepage; the browser's own scrolling stays smooth.

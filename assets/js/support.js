@@ -49,6 +49,30 @@
     }
   };
 
+  const LOGO = '/assets/img/brand/logo-mark.webp';
+  const avatar = (cls = 'support-avatar') => `<img class="${cls}" src="${LOGO}" alt="" width="36" height="36" decoding="async" />`;
+  const ICON = {
+    close: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    send: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>',
+    arrow: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
+    chat: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>',
+    clock: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
+  };
+  // Phones: no automatic focus, so the keyboard doesn't cover the panel the moment it opens.
+  const focusSoon = (el) => {
+    if (el && window.matchMedia('(pointer: fine)').matches) setTimeout(() => el.focus({ preventScroll: true }), 60);
+  };
+  // Message boxes grow with the text, up to a limit.
+  const autoGrow = (ta, max = 128) => {
+    const fit = () => {
+      ta.style.height = '';
+      if (!ta.value || !ta.scrollHeight) return; // empty or hidden: keep the size from the stylesheet
+      ta.style.height = 'auto';
+      ta.style.height = Math.min(ta.scrollHeight + 2, max) + 'px'; // + the 1px borders
+    };
+    ta.addEventListener('input', fit);
+  };
+
   function build() {
     if (panel) return;
     panel = document.createElement('div');
@@ -58,17 +82,18 @@
     panel.hidden = true;
     panel.innerHTML = `
       <div class="support-head">
-        <div>
+        ${avatar('support-head-avatar')}
+        <div class="support-head-text">
           <p class="support-title">Dragon Spring Swords</p>
-          <p class="support-sub">A person from our team · we reply here and by email</p>
+          <p class="support-sub">A real person replies, here and by email</p>
         </div>
-        <button type="button" class="support-close" aria-label="Close chat">×</button>
+        <button type="button" class="support-close" aria-label="Close chat">${ICON.close}</button>
       </div>
       <div class="support-body" aria-live="polite"></div>
       <form class="support-compose" hidden>
         <label class="sr-only" for="support-text">Message</label>
-        <textarea id="support-text" rows="2" maxlength="2000" placeholder="Write a message…" required></textarea>
-        <button type="submit" class="support-send">Send</button>
+        <textarea id="support-text" rows="1" maxlength="2000" placeholder="Write a message" required></textarea>
+        <button type="submit" class="support-send" aria-label="Send">${ICON.send}</button>
       </form>`;
     document.body.appendChild(panel);
     body = panel.querySelector('.support-body');
@@ -76,6 +101,7 @@
     panel.querySelector('.support-close').addEventListener('click', close);
     panel.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
     const ta = compose.querySelector('textarea');
+    autoGrow(ta);
     ta.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); compose.requestSubmit(); }
     });
@@ -84,6 +110,7 @@
       const text = ta.value.trim();
       if (!text) return;
       ta.value = '';
+      ta.style.height = '';
       const out = await api('/api/support/message', { token, message: text });
       if (out && out.ok) refresh();
       else {
@@ -122,19 +149,39 @@
     compose.hidden = true;
     shown = -1;
     body.innerHTML = `
-      <div class="support-intro">
-        <p>Ask us anything about a piece, an order or delivery. A person from the team will answer here, and by email if you’ve left.</p>
+      <div class="support-msg is-team support-welcome">
+        ${avatar('support-msg-avatar')}
+        <div class="support-msg-col">
+          <div class="support-bubble">Hello! Ask us anything about a blade, an order or delivery. Someone from our team will reply here, and by email if you’ve left.</div>
+          <p class="support-meta">Dragon Spring team</p>
+        </div>
       </div>
-      <form class="support-start" novalidate>
-        <label>Name <input name="name" autocomplete="name" maxlength="80" required /></label>
-        <label>Email <small>so we can reply if you leave</small><input name="email" type="email" autocomplete="email" maxlength="120" required /></label>
-        <label>Message <textarea name="message" rows="4" maxlength="2000" required></textarea></label>
+      <div class="support-topics" role="group" aria-label="Start with a topic">
+        <button type="button" data-topic="I have a question about ">A blade</button>
+        <button type="button" data-topic="Can you ship to ">Shipping to my country</button>
+        <button type="button" data-topic="About my order: ">My order</button>
+      </div>
+      <form class="support-start support-card" novalidate>
+        <label><span>Your name</span><input name="name" autocomplete="name" maxlength="80" placeholder="Name" required /></label>
+        <label><span>Email</span><input name="email" type="email" autocomplete="email" maxlength="120" placeholder="you@example.com" required /><small>So we can reply if you leave the site.</small></label>
+        <label><span>Message</span><textarea name="message" rows="3" maxlength="2000" placeholder="How can we help?" required></textarea></label>
         <label class="hp" aria-hidden="true">Website <input name="website" tabindex="-1" autocomplete="off" /></label>
         <p class="support-error" role="alert" hidden></p>
-        <button type="submit" class="btn btn-dark btn-block">Start chat</button>
-        <p class="support-fine">By starting a chat you agree we keep this conversation to help you (<a href="/page/privacy" target="_blank">privacy</a>).</p>
+        <button type="submit" class="support-submit"><span>Start chat</span>${ICON.arrow}</button>
+        <p class="support-fine">We keep this conversation so we can help you. <a href="/page/privacy" target="_blank">Privacy</a></p>
       </form>`;
     const f = body.querySelector('.support-start');
+    const msg = f.querySelector('textarea[name=message]');
+    autoGrow(msg, 160);
+    body.querySelectorAll('[data-topic]').forEach((b) => b.addEventListener('click', () => {
+      body.querySelectorAll('[data-topic]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      const starters = [...body.querySelectorAll('[data-topic]')].map((x) => x.dataset.topic);
+      if (!msg.value.trim() || starters.includes(msg.value)) msg.value = b.dataset.topic; // never overwrite their own words
+      msg.dispatchEvent(new Event('input'));
+      msg.focus({ preventScroll: true });
+      msg.setSelectionRange(msg.value.length, msg.value.length);
+      f.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }));
     f.addEventListener('submit', async (e) => {
       e.preventDefault();
       const d = Object.fromEntries(new FormData(f).entries());
@@ -143,11 +190,12 @@
       if (!d.name.trim() || !d.message.trim()) return fail('Please add your name and a message.');
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.email.trim())) return fail('Please give an email address so we can reply.');
       const btn = f.querySelector('button[type=submit]');
+      const label = btn.querySelector('span');
       btn.disabled = true;
-      btn.textContent = 'Starting…';
+      label.textContent = 'Starting…';
       const out = await api('/api/support/start', { ...d, page: location.href });
       btn.disabled = false;
-      btn.textContent = 'Start chat';
+      label.textContent = 'Start chat';
       if (!out || !out.ok) return fail((out && out.error) || 'Couldn’t reach us just now. Please try again.');
       if (out.needsCode) return renderCode(out, d);
       token = out.token;
@@ -155,7 +203,7 @@
       renderThread(out);
       updateLauncher();
     });
-    setTimeout(() => f.querySelector('input[name=name]').focus(), 50);
+    focusSoon(f.querySelector('input[name=name]'));
   }
 
   /* Returning visitor on another device: their email already has a conversation. We email a code;
@@ -169,10 +217,10 @@
         <p>To keep it private, we’ve emailed a 6-digit code to <strong>${esc(info.hint)}</strong>. Enter it to carry on where you left off. Your new message will be added.</p>
         ${info.note ? `<p>${esc(info.note)}</p>` : ''}
       </div>
-      <form class="support-start support-code" novalidate>
+      <form class="support-start support-card support-code" novalidate>
         <label>Code from the email <input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required /></label>
         <p class="support-error" role="alert" hidden></p>
-        <button type="submit" class="btn btn-dark btn-block">Continue my conversation</button>
+        <button type="submit" class="support-submit"><span>Continue my conversation</span>${ICON.arrow}</button>
         <p class="support-fine">
           <button type="button" class="support-link" data-act="resend">Send a new code</button> ·
           <button type="button" class="support-link" data-act="new">Start a new conversation instead</button>
@@ -209,7 +257,7 @@
       renderThread(out);
       updateLauncher();
     });
-    setTimeout(() => input.focus(), 50);
+    focusSoon(input);
   }
 
   function renderThread(d) {
@@ -220,13 +268,21 @@
     if (msgs.length === shown) return;
     shown = msgs.length;
     const near = body.scrollHeight - body.scrollTop - body.clientHeight < 80;
-    body.innerHTML = msgs.map((m) => `
-        <div class="support-msg is-${esc(m.from)}">
-          <div class="support-bubble">${esc(m.text)}</div>
-          <p class="support-meta">${m.from === 'you' ? 'You' : m.from === 'team' ? 'Dragon Spring team' : 'AI assistant'}${m.via === 'email' ? ' · by email' : ''} · ${fmt(m.at)}</p>
-        </div>`).join('') +
-      (msgs.some((m) => m.from === 'team') ? '' : '<p class="support-wait">Thanks, a person from the team will reply soon. You can close this; we’ll email you too.</p>') +
-      `<p class="support-fine support-ref">Reference ${esc(d.number || '')}. You can also reply to our email. It all stays in this conversation.</p>`;
+    body.innerHTML = msgs.map((m, i) => {
+      const next = msgs[i + 1];
+      const last = !next || next.from !== m.from; // avatar and time only under the last of a run
+      const who = m.from === 'you' ? 'You' : m.from === 'team' ? 'Dragon Spring team' : 'AI assistant';
+      return `
+        <div class="support-msg is-${esc(m.from)}${last ? ' is-last' : ''}">
+          ${m.from === 'team' ? (last ? avatar('support-msg-avatar') : '<span class="support-msg-avatar" aria-hidden="true"></span>') : ''}
+          <div class="support-msg-col">
+            <div class="support-bubble">${esc(m.text)}</div>
+            ${last ? `<p class="support-meta">${who}${m.via === 'email' ? ' · by email' : ''} · ${fmt(m.at)}</p>` : ''}
+          </div>
+        </div>`;
+    }).join('') +
+      (msgs.some((m) => m.from === 'team') ? '' : `<p class="support-wait">${ICON.clock}<span>Thanks, someone from the team will reply soon. You can close this; we’ll email you too.</span></p>`) +
+      `<p class="support-fine support-ref">Reference ${esc(d.number || '')}. You can also reply to our email; it all stays in this conversation.</p>`;
     if (near || shown <= 2) body.scrollTop = body.scrollHeight;
   }
 
@@ -257,7 +313,7 @@
     refresh(true);
     clearInterval(timer);
     timer = setInterval(() => { if (token && document.visibilityState === 'visible') refresh(); }, 4000);
-    if (token) setTimeout(() => compose.querySelector('textarea').focus(), 50);
+    if (token) focusSoon(compose.querySelector('textarea'));
   }
 
   function close() {
@@ -281,7 +337,7 @@
       launcher.addEventListener('click', open);
       document.body.appendChild(launcher);
     }
-    launcher.innerHTML = token ? 'Your conversation<span class="support-dot" hidden></span>' : 'Chat with us';
+    launcher.innerHTML = token ? `${ICON.chat}<span>Your conversation</span><span class="support-dot" hidden></span>` : `${ICON.chat}<span>Chat with us</span>`;
     launcher.hidden = false;
     checkUnread();
   }
