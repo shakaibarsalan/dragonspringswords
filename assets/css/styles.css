@@ -1259,7 +1259,8 @@ a.contact-card:hover { border-color: var(--ink); }
 .support-compose textarea { resize: none; max-height: 8rem; }
 .support-send { padding: 0.625rem 0.875rem; border-radius: var(--radius-sm); background: var(--ink); color: var(--paper);
   font-size: var(--text-xs); letter-spacing: 0.12em; text-transform: uppercase; }
-.support-launcher { position: fixed; right: 1.25rem; bottom: 1.25rem; z-index: 2147483500; padding: 0.875rem 1.25rem;
+/* Below HaloChime's widget (2147483000) so its open panel covers this button; above the page. */
+.support-launcher { position: fixed; right: 1.25rem; bottom: 1.25rem; z-index: 2147482000; padding: 0.875rem 1.25rem;
   border-radius: 999px; background: var(--ink); color: var(--paper); font-size: var(--text-xs); letter-spacing: 0.12em;
   text-transform: uppercase; box-shadow: 0 12px 30px -8px rgb(17 18 20 / 0.45); }
 .support-launcher.is-pill { bottom: 5.75rem; padding: 0.625rem 1rem; }
