@@ -1,4 +1,4 @@
-# Dragon Spring Swords — landing page
+# Dragon Spring Swords, landing page
 
 Katanas, swords, kitchen knives and cutlery. The design is ported from the
 Nehta clothing storefront (`apps/storefront` in the Nehta repo): the same
