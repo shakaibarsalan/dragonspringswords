@@ -1,10 +1,10 @@
 /**
- * DRAGON SPRING SWORDS — chat with a person.
+ * DRAGON SPRING SWORDS, chat with a person.
  *
  * Opens from HaloChime's "Talk to a person" button (main.js registers it with Halochime.setSwitch),
  * from any [data-support-open] link, or from the link in our emails (?chat=<token>). Messages go to
  * the admin's Support inbox. Replies appear here while the visitor is on the site, and are emailed
- * otherwise; the visitor can answer by email or here — it all stays one conversation.
+ * otherwise; the visitor can answer by email or here. It all stays one conversation.
  */
 (function () {
   'use strict';
@@ -166,7 +166,7 @@
     body.innerHTML = `
       <div class="support-intro">
         <p><strong>Welcome back${form.name ? ', ' + esc(form.name.split(' ')[0]) : ''}.</strong> We found your earlier conversation (${esc(info.number)}).</p>
-        <p>To keep it private, we’ve emailed a 6-digit code to <strong>${esc(info.hint)}</strong>. Enter it to carry on where you left off — your new message will be added.</p>
+        <p>To keep it private, we’ve emailed a 6-digit code to <strong>${esc(info.hint)}</strong>. Enter it to carry on where you left off. Your new message will be added.</p>
         ${info.note ? `<p>${esc(info.note)}</p>` : ''}
       </div>
       <form class="support-start support-code" novalidate>
@@ -225,8 +225,8 @@
           <div class="support-bubble">${esc(m.text)}</div>
           <p class="support-meta">${m.from === 'you' ? 'You' : m.from === 'team' ? 'Dragon Spring team' : 'AI assistant'}${m.via === 'email' ? ' · by email' : ''} · ${fmt(m.at)}</p>
         </div>`).join('') +
-      (msgs.some((m) => m.from === 'team') ? '' : '<p class="support-wait">Thanks — a person from the team will reply soon. You can close this; we’ll email you too.</p>') +
-      `<p class="support-fine support-ref">Reference ${esc(d.number || '')}. You can also reply to our email — it all stays in this conversation.</p>`;
+      (msgs.some((m) => m.from === 'team') ? '' : '<p class="support-wait">Thanks, a person from the team will reply soon. You can close this; we’ll email you too.</p>') +
+      `<p class="support-fine support-ref">Reference ${esc(d.number || '')}. You can also reply to our email. It all stays in this conversation.</p>`;
     if (near || shown <= 2) body.scrollTop = body.scrollHeight;
   }
 

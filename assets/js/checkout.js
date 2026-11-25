@@ -1,5 +1,5 @@
 /**
- * DRAGON SPRING SWORDS — checkout (bank transfer).
+ * DRAGON SPRING SWORDS, checkout (bank transfer).
  *
  * On /checkout?p=<product-slug>: order form → POST /api/orders → order number
  * and bank-transfer instructions (also emailed). Prices are always recalculated
@@ -74,8 +74,8 @@
     US: 'United States', CA: 'Canada', GB: 'United Kingdom', DE: 'Germany', CH: 'Switzerland',
     AU: 'Australia', FI: 'Finland', ES: 'Spain', EE: 'Estonia', SA: 'Saudi Arabia',
   };
-  const SUBMIT_PAY = 'Place order — pay by bank transfer';
-  const SUBMIT_CHECK = 'Place order — we’ll confirm before you pay';
+  const SUBMIT_PAY = 'Place order and pay by bank transfer';
+  const SUBMIT_CHECK = 'Place order (we’ll confirm before you pay)';
 
   function countryOptions(cfg) {
     const main = cfg.mainCountries || [];
@@ -112,7 +112,7 @@
       return;
     }
     if (product.inStock === false) {
-      message('This piece is sold out', 'Ask us about the next batch — we’ll reserve one for you.', contactButtons());
+      message('This piece is sold out', 'Ask us about the next batch. We’ll reserve one for you.', contactButtons());
       return;
     }
     const maxQty = Math.max(1, Number(cfg.maxQty) || 1);
@@ -145,7 +145,7 @@
             </div>
             <label>Country <select name="country" id="co-country" autocomplete="country-name" required>${countryOptions(cfg)}</select></label>
             <div class="co-rules" id="co-rules" role="status" aria-live="polite" hidden></div>
-            <p class="co-hint">Some countries restrict importing blades. Please check your local rules — we can’t ship where it isn’t allowed.</p>
+            <p class="co-hint">Some countries restrict importing blades. Please check your local rules. We can’t ship where it isn’t allowed.</p>
           </fieldset>
           <fieldset>
             <legend>Anything we should know? <small>optional</small></legend>
@@ -186,7 +186,7 @@
           </dl>
           <ul class="co-trust">
             <li>Pay by bank transfer with your order number as reference.</li>
-            <li>We ship only after your payment clears — insured, tracked and signed-for.</li>
+            <li>We ship only after your payment clears. Every parcel is insured, tracked and signed-for.</li>
             <li>Every blade is sharpened and checked by hand before it leaves.</li>
           </ul>
         </aside>
@@ -317,7 +317,7 @@
   }
 
   function done(o) {
-    document.title = `Order ${o.number} — Dragon Spring Swords`;
+    document.title = `Order ${o.number} | Dragon Spring Swords`;
     const notes = (o.buyerNotes || []).length
       ? `<div class="co-rules">${o.buyerNotes.map((n) => `<p>${esc(n)}</p>`).join('')}</div>`
       : '';
@@ -328,13 +328,13 @@
       root.innerHTML = `
       <div class="co-done">
         <p class="eyebrow">Order received</p>
-        <h1 class="display-md">Thank you — your order number is <span class="co-number">${esc(o.number)}</span></h1>
+        <h1 class="display-md">Thank you. Your order number is <span class="co-number">${esc(o.number)}</span></h1>
         <p><strong>Please don’t pay yet.</strong> Importing swords into your country can need a permit, so we check the current rules for every sword order first. We’ll email <strong>${esc(o.email)}</strong> with the payment details, usually within 1–2 working days, or tell you if we can’t ship it.</p>
         ${notes}
         <ol class="co-next">
           <li><strong>We check</strong> the import rules for your address.</li>
           <li><strong>You pay</strong> by bank transfer once we’ve emailed the details (${usd(o.total)} USD).</li>
-          <li><strong>We ship</strong> after the payment clears — insured, tracked and signed-for.</li>
+          <li><strong>We ship</strong> after the payment clears: insured, tracked and signed-for.</li>
         </ol>
         <div class="checkout-message-actions"><a class="btn btn-dark" href="/shop">Keep browsing</a>${waLink}</div>
       </div>`;
@@ -344,7 +344,7 @@
     root.innerHTML = `
       <div class="co-done">
         <p class="eyebrow">Order placed</p>
-        <h1 class="display-md">Thank you — your order number is <span class="co-number">${esc(o.number)}</span></h1>
+        <h1 class="display-md">Thank you. Your order number is <span class="co-number">${esc(o.number)}</span></h1>
         <p>To complete it, send <strong>${usd(o.total)} USD</strong> by bank transfer within <strong>${Number(o.paymentDays) || 5} days</strong>, with <strong>${esc(o.number)}</strong> as the payment reference. We’ve also emailed these details to <strong>${esc(o.email)}</strong>.</p>
         <div class="co-bank">
           <div class="co-bank-head"><span>Bank transfer details</span><button type="button" class="btn btn-outline-dark co-copy" data-copy="bank">Copy</button></div>
@@ -355,9 +355,9 @@ ${esc(o.bankDetails)}</pre>
         </div>
         ${notes}
         <ol class="co-next">
-          <li><strong>Pay</strong> — any bank or transfer fees are paid by the sender, so the full amount arrives.</li>
-          <li><strong>We confirm</strong> — you’ll get an email as soon as the payment clears.</li>
-          <li><strong>We ship</strong> — insured, tracked and signed-for. The tracking number comes by email.</li>
+          <li><strong>Pay</strong>: any bank or transfer fees are paid by the sender, so the full amount arrives.</li>
+          <li><strong>We confirm</strong>: you’ll get an email as soon as the payment clears.</li>
+          <li><strong>We ship</strong>: insured, tracked and signed-for. The tracking number comes by email.</li>
         </ol>
         <div class="checkout-message-actions"><a class="btn btn-dark" href="/shop">Keep browsing</a>${waLink}</div>
       </div>`;

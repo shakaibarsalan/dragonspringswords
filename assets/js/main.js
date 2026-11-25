@@ -1,5 +1,5 @@
 /**
- * DRAGON SPRING SWORDS — storefront behaviour.
+ * DRAGON SPRING SWORDS, storefront behaviour.
  *
  * One script for every page. It renders the shared header, footer and
  * announcement, then the page's own content (data-page on <body>):
@@ -83,7 +83,7 @@
   </defs></svg>`;
 
   /* ---------------------------------------------------------------------------
-     CURRENCY — prices are set in US dollars and shown in the visitor's currency.
+     CURRENCY, prices are set in US dollars and shown in the visitor's currency.
      Country comes from Cloudflare (via catalog.js) when available, otherwise
      from the browser's timezone and language. The visitor can always override.
      ------------------------------------------------------------------------ */
@@ -180,7 +180,7 @@
   }
 
   /* ---------------------------------------------------------------------------
-     LAYOUT — announcement, header, mobile menu, footer (shared by every page)
+     LAYOUT, announcement, header, mobile menu, footer (shared by every page)
      ------------------------------------------------------------------------ */
   const currencyPicker = (extra = '') =>
     `<label class="currency-pick ${extra}"><span class="sr-only">Currency</span><select data-currency aria-label="Currency"></select></label>`;
@@ -231,7 +231,7 @@
             ${links.map((l) => `<a class="underline-grow${l.key === key ? ' is-drawn' : ''}" href="${esc(l.href)}"${l.key === key ? ' aria-current="page"' : ''}>${esc(l.label)}</a>`).join('')}
           </nav>
           <button type="button" class="menu-toggle" id="menu-open" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu">${icon('menu', 'icon icon-20')}</button>
-          <a href="/" class="wordmark" aria-label="Dragon Spring Swords — home"><img class="wordmark-mark" src="/assets/img/brand/logo-mark.webp" alt="" width="44" height="44" decoding="async" /><span>Dragon Spring</span></a>
+          <a href="/" class="wordmark" aria-label="Dragon Spring Swords home page"><img class="wordmark-mark" src="/assets/img/brand/logo-mark.webp" alt="" width="44" height="44" decoding="async" /><span>Dragon Spring</span></a>
           <div class="header-actions">
             ${currencyPicker('hide-md')}
             <a href="/shop?focus=search" class="icon-link" aria-label="Search the shop">${icon('search', 'icon')}</a>
@@ -484,7 +484,7 @@
   }
 
   /* ---------------------------------------------------------------------------
-     REVIEWS — only verified orders, approved by the owner in the admin
+     REVIEWS. Only verified orders, approved by the owner in the admin
      ------------------------------------------------------------------------ */
   const stars = (n) => {
     const k = Math.max(0, Math.min(5, Math.round(Number(n) || 0)));
@@ -603,7 +603,7 @@
   }
 
   /* ---------------------------------------------------------------------------
-     SHOP — every visible product, with category filter, search and sort
+     SHOP. Every visible product, with category filter, search and sort
      ------------------------------------------------------------------------ */
   function renderShop() {
     const grid = $('#shop-grid');
@@ -652,9 +652,9 @@
       title.textContent = cat ? cat.name : 'All pieces';
       lede.textContent = cat
         ? `Every piece in ${cat.name.toLowerCase()} we have in the vault right now.`
-        : 'Katanas, swords, kitchen knives and cutlery — every piece finished and sharpened by hand.';
+        : 'Katanas, swords, kitchen knives and cutlery. Every piece finished and sharpened by hand.';
       // The server already wrote this page's title and description; change them only on later filters.
-      if (!(SSR && first)) setMeta(`${cat ? cat.name : 'Shop'} — Dragon Spring Swords`, lede.textContent);
+      if (!(SSR && first)) setMeta(`${cat ? cat.name : 'Shop'} | Dragon Spring Swords`, lede.textContent);
       first = false;
       $$('.chip', chips).forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.c === state.c)));
       count.textContent = `${list.length} ${list.length === 1 ? 'piece' : 'pieces'}`;
@@ -740,7 +740,7 @@
         'Not in the vault', 'This piece isn’t available',
         'It may have sold or been taken down. Have a look at what’s in the shop now.', '/shop', 'Browse the shop',
       );
-      setMeta('Piece not found — Dragon Spring Swords');
+      setMeta('Piece not found | Dragon Spring Swords');
       return;
     }
     const discount = p.basePrice ? discountPercent(p.basePrice, p.price) : 0;
@@ -769,7 +769,7 @@
         <div class="product-layout">
           <div class="gallery">
             <div class="gallery-main" id="gallery-main" tabindex="0" aria-label="Product photos${images.length > 1 ? ', use the arrow keys to change' : ''}">
-              ${images.map((src, i) => `<img src="${esc(src)}" alt="${esc(p.name)}${i ? ` — photo ${i + 1}` : ''}" ${i ? 'loading="lazy" hidden' : 'fetchpriority="high"'} />`).join('')}
+              ${images.map((src, i) => `<img src="${esc(src)}" alt="${esc(p.name)}${i ? `, photo ${i + 1}` : ''}" ${i ? 'loading="lazy" hidden' : 'fetchpriority="high"'} />`).join('')}
               ${images.length > 1 ? `
                 <button type="button" class="gallery-nav prev" aria-label="Previous photo">${icon('arrow-left')}</button>
                 <button type="button" class="gallery-nav next" aria-label="Next photo">${icon('arrow-right')}</button>
@@ -834,7 +834,7 @@
         <div class="product-grid">${related.map((x, i) => productCard(x, i)).join('')}</div>
       </section>` : ''}`;
 
-    setMeta(`${p.name} — Dragon Spring Swords`, p.description || `${p.name}${p.subtitle ? ', ' + p.subtitle : ''}. Hand-finished by Dragon Spring Swords.`);
+    setMeta(`${p.name} | Dragon Spring Swords`, p.description || `${p.name}${p.subtitle ? ', ' + p.subtitle : ''}. Hand-finished by Dragon Spring Swords.`);
     wireProduct(p);
   }
 
@@ -849,7 +849,7 @@
     function updateOrderLinks() {
       if (!p) return; // no live catalogue: keep the server's US-dollar links
       const shown = currency === 'USD' ? formatPrice(p.price) : `${formatPrice(p.price)} (US ${formatPrice(p.price, 'USD')})`;
-      const msg = `Hello Dragon Spring Swords, I'd like to ${inStock ? 'order' : 'ask about'}:\n${p.name}${p.subtitle ? ' — ' + p.subtitle : ''}\nPrice shown: ${shown}\n${location.href}`;
+      const msg = `Hello Dragon Spring Swords, I'd like to ${inStock ? 'order' : 'ask about'}:\n${p.name}${p.subtitle ? ', ' + p.subtitle : ''}\nPrice shown: ${shown}\n${location.href}`;
       const wa = $('#order-wa');
       const mail = $('#order-mail');
       if (wa) wa.href = `https://wa.me/${S.whatsapp}?text=${encodeURIComponent(msg)}`;
@@ -900,7 +900,7 @@
     const pg = pages.find((x) => x.slug === slug);
     if (!pg) {
       root.innerHTML = notFoundHtml('Not found', 'This page has left the vault', 'The link may be old or mistyped.', '/', 'Back to the homepage');
-      setMeta('Page not found — Dragon Spring Swords');
+      setMeta('Page not found | Dragon Spring Swords');
       return;
     }
     const card = (href, ic, label, value, ext) =>
@@ -931,11 +931,11 @@
           </aside>
         </div>
       </div>`;
-    setMeta(`${pg.title} — Dragon Spring Swords`, pg.body.split('\n')[0]);
+    setMeta(`${pg.title} | Dragon Spring Swords`, pg.body.split('\n')[0]);
   }
 
   /* ---------------------------------------------------------------------------
-     NEWSLETTER — email or WhatsApp number, stored in the admin
+     NEWSLETTER, email or WhatsApp number, stored in the admin
      ------------------------------------------------------------------------ */
   let formCount = 0;
   function mountNewsletters(root = document) {
@@ -982,7 +982,7 @@
           done.setAttribute('role', 'status');
           done.innerHTML =
             icon('check') +
-            (out.channel === 'whatsapp' ? 'Thank you — we’ll message you on WhatsApp when new pieces land.' : 'Thank you — we’ll email you when new pieces land.');
+            (out.channel === 'whatsapp' ? 'Thank you. We’ll message you on WhatsApp when new pieces land.' : 'Thank you. We’ll email you when new pieces land.');
           form.replaceWith(done);
         } catch (err) {
           error.textContent = err.message === 'Failed to fetch' ? 'Couldn’t reach us just now. Please try again.' : err.message;
@@ -1132,7 +1132,7 @@
   }
 
   /* ---------------------------------------------------------------------------
-     LIVE CHAT — HaloChime widget, switched on from the admin's settings
+     LIVE CHAT, HaloChime widget, switched on from the admin's settings
      ------------------------------------------------------------------------ */
   function initChat() {
     if (!S.chat_key || !/^https:\/\//.test(S.chat_src || '')) return;

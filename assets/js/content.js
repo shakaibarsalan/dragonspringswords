@@ -1,5 +1,5 @@
 /**
- * DRAGON SPRING SWORDS — permanent design content.
+ * DRAGON SPRING SWORDS, permanent design content.
  *
  * Only the parts of the page that belong to the design live here: the
  * scrolling strip, the forge photos, and fallback category tiles used when
