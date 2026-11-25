@@ -321,7 +321,7 @@
     const hoverImg = p.hover !== false ? secondary : null;
     let badge = '';
     if (!inStock) badge = '<span class="badge badge-overlay">Sold out</span>';
-    else if (discount > 0) badge = `<span class="badge badge-accent">−${discount}%</span>`;
+    else if (discount > 0) badge = `<span class="badge badge-accent">-${discount}%</span>`;
     else if (p.isNew) badge = '<span class="badge badge-overlay">New</span>';
     const swatches =
       p.finishes && p.finishes.length > 1
@@ -829,7 +829,7 @@
               ${myReviews.length ? `<a href="#product-reviews" class="rating-line"><span class="stars-inline" aria-hidden="true">${stars(avg)}</span> ${avg.toFixed(1)} · ${myReviews.length} verified review${myReviews.length === 1 ? '' : 's'}</a>` : ''}
               <div class="product-price-lg${discount > 0 ? ' is-sale' : ''}" data-numeric>
                 ${priceSpan(p.price)}
-                ${discount > 0 ? `<s data-usd="${Number(p.basePrice)}">${formatPrice(p.basePrice)}</s><span class="badge badge-accent">−${discount}%</span>` : ''}
+                ${discount > 0 ? `<s data-usd="${Number(p.basePrice)}">${formatPrice(p.basePrice)}</s><span class="badge badge-accent">-${discount}%</span>` : ''}
                 ${!inStock ? '<span class="badge badge-dark">Sold out</span>' : p.isNew ? '<span class="badge badge-dark">New</span>' : ''}
               </div>
               <p class="currency-note" hidden>Converted from US dollars at today’s rate. The final amount is confirmed when you order.</p>

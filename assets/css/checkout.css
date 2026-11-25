@@ -83,3 +83,6 @@
 .checkout-form label > input:not([type=checkbox]):not([type=radio]), .checkout-form label > select, .checkout-form label > textarea { min-width: 0; width: 100%; max-width: 100%; }
 @media (min-width: 600px) { .co-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .co-grid-3 { grid-template-columns: minmax(0, 2fr) minmax(0, 1.4fr) minmax(0, 1fr); } }
 @media (min-width: 960px) { .checkout-layout { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); } }
+
+/* The quantity buttons use a system font: the store font draws "−" as a long bar. */
+.co-stepper button { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }

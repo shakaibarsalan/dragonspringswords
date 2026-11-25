@@ -2,7 +2,7 @@
 
 Katanas, swords, kitchen knives and cutlery. The design is ported from the
 Nehta clothing storefront (`apps/storefront` in the Nehta repo): the same
-colours, fonts (Bodoni Moda and Geist), animations and section order. The
+colours, fonts (Shippori Mincho and Zen Kaku Gothic New), animations and section order. The
 Nehta code itself was not changed.
 
 ## Run it on localhost
