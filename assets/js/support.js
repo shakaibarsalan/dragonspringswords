@@ -149,12 +149,67 @@
       btn.disabled = false;
       btn.textContent = 'Start chat';
       if (!out || !out.ok) return fail((out && out.error) || 'Couldn’t reach us just now. Please try again.');
+      if (out.needsCode) return renderCode(out, d);
       token = out.token;
       store.set(KEY, token);
       renderThread(out);
       updateLauncher();
     });
     setTimeout(() => f.querySelector('input[name=name]').focus(), 50);
+  }
+
+  /* Returning visitor on another device: their email already has a conversation. We email a code;
+     entering it opens that conversation (their new message is added to it). */
+  function renderCode(info, form) {
+    compose.hidden = true;
+    shown = -1;
+    body.innerHTML = `
+      <div class="support-intro">
+        <p><strong>Welcome back${form.name ? ', ' + esc(form.name.split(' ')[0]) : ''}.</strong> We found your earlier conversation (${esc(info.number)}).</p>
+        <p>To keep it private, we’ve emailed a 6-digit code to <strong>${esc(info.hint)}</strong>. Enter it to carry on where you left off — your new message will be added.</p>
+        ${info.note ? `<p>${esc(info.note)}</p>` : ''}
+      </div>
+      <form class="support-start support-code" novalidate>
+        <label>Code from the email <input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required /></label>
+        <p class="support-error" role="alert" hidden></p>
+        <button type="submit" class="btn btn-dark btn-block">Continue my conversation</button>
+        <p class="support-fine">
+          <button type="button" class="support-link" data-act="resend">Send a new code</button> ·
+          <button type="button" class="support-link" data-act="new">Start a new conversation instead</button>
+        </p>
+      </form>`;
+    const f = body.querySelector('.support-code');
+    const err = f.querySelector('.support-error');
+    const say = (m, ok) => { err.textContent = m; err.hidden = false; err.classList.toggle('is-ok', !!ok); };
+    const input = f.querySelector('input[name=code]');
+    input.addEventListener('input', () => { input.value = input.value.replace(/\D/g, '').slice(0, 6); err.hidden = true; });
+    f.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (input.value.length !== 6) return say('Enter the 6 digits from the email.');
+      const btn = f.querySelector('button[type=submit]');
+      btn.disabled = true;
+      const out = await api('/api/support/verify', { handle: info.handle, code: input.value });
+      btn.disabled = false;
+      if (!out || !out.ok) return say((out && out.error) || 'Couldn’t check the code just now. Please try again.');
+      token = out.token;
+      store.set(KEY, token);
+      renderThread(out);
+      updateLauncher();
+    });
+    f.querySelector('[data-act=resend]').addEventListener('click', async () => {
+      const out = await api('/api/support/resend', { handle: info.handle });
+      if (out && out.ok) { input.value = ''; say('A new code is on its way to ' + out.hint + '.', true); }
+      else say((out && out.error) || 'Couldn’t send a new code just now.');
+    });
+    f.querySelector('[data-act=new]').addEventListener('click', async () => {
+      const out = await api('/api/support/start', { ...form, page: location.href, new: true });
+      if (!out || !out.ok) return say((out && out.error) || 'Couldn’t start a new conversation just now.');
+      token = out.token;
+      store.set(KEY, token);
+      renderThread(out);
+      updateLauncher();
+    });
+    setTimeout(() => input.focus(), 50);
   }
 
   function renderThread(d) {
