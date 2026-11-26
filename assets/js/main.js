@@ -1670,7 +1670,8 @@
     const slug = (p && p.slug) || (location.pathname.match(/\/product\/([a-z0-9-]+)/) || [])[1];
     const name = (p && p.name) || ($('.product-title') || {}).textContent || 'this piece';
     const priceUsd = p ? Number(p.price) : null;
-    const listed = priceUsd ? Math.ceil(priceUsd) : 0; // what the offer box starts with: the price as it is
+    // what the offer box starts with: the listed price exactly (212.50, or 125 when there are no cents)
+    const listed = priceUsd ? (Number.isInteger(priceUsd) ? String(priceUsd) : priceUsd.toFixed(2)) : '';
     let dlg;
     function build() {
       dlg = document.createElement('dialog');
@@ -1684,7 +1685,7 @@
           </div>
           <p class="review-help">Name your price for <strong>${esc(name)}</strong>${priceUsd ? ` (listed at ${formatPrice(priceUsd, 'USD')})` : ''}. We reply by email, usually within a day, and you can accept our price or offer again.</p>
           <label>Your offer in US dollars
-            <span class="offer-input"><span>$</span><input name="amount" inputmode="numeric" autocomplete="off" required value="${listed || ''}" placeholder="Your price" /></span>
+            <span class="offer-input"><span>$</span><input name="amount" inputmode="decimal" autocomplete="off" required value="${listed || ''}" placeholder="Your price" /></span>
             ${listed ? `<small class="offer-hint">Listed at ${formatPrice(priceUsd, 'USD')}. Change it to the price you’d like to pay.</small>` : ''}
             <small class="offer-conv" aria-live="polite"></small>
           </label>
@@ -1708,12 +1709,12 @@
       const amount = form.elements.amount;
       const conv = $('.offer-conv', dlg);
       amount.addEventListener('input', () => {
-        amount.value = amount.value.replace(/[^\d]/g, '').slice(0, 7);
+        // digits and, if they like, cents: 180 or 180.50
+        const m = amount.value.replace(/[^\d.]/g, '').match(/^(\d{0,7})(\.\d{0,2})?/);
+        amount.value = m ? m[1] + (m[2] || '') : '';
         const v = Number(amount.value);
         conv.textContent = v && currency !== 'USD' ? `About ${formatPrice(v)} in ${currency}` : '';
       });
-      // the listed price is there to be replaced: focusing the box selects it, so typing writes over it
-      amount.addEventListener('focus', () => setTimeout(() => amount.select(), 0));
       $$('[data-close]', dlg).forEach((b) => b.addEventListener('click', () => dlg.close()));
       dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
       form.addEventListener('submit', async (e) => {
@@ -1722,7 +1723,7 @@
         const fail = (m) => { err.textContent = m; err.hidden = false; };
         const fix = (m) => { fail(m); amount.focus(); };
         if (!Number(d.amount)) return fix('Enter your offer in US dollars.');
-        if (listed && Number(d.amount) === listed) return fix('That’s the listed price. Change it to the price you’d like to pay.');
+        if (listed && Number(d.amount) === Number(listed)) return fix('That’s the listed price. Change it to the price you’d like to pay.');
         if (priceUsd && Number(d.amount) >= priceUsd) return fix('That’s the full price or more, so you can buy it right away.');
         if (!d.name.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.email.trim())) return fail('Please add your name and email so we can reply.');
         const send = $('button[type=submit]', form);
@@ -1750,8 +1751,12 @@
       const amount = $('form', dlg).elements.amount;
       if (!amount.value && listed) amount.value = listed; // after a sent offer, start again from the listed price
       dlg.showModal ? dlg.showModal() : dlg.setAttribute('open', '');
-      // with a mouse, go straight to the price (on phones the keyboard would cover the card)
-      if (window.matchMedia('(pointer: fine)').matches) { amount.focus(); amount.select(); }
+      // with a mouse, the cursor waits at the end of the price, ready to change it (nothing selected);
+      // on phones nothing is focused, so the keyboard doesn't cover the card
+      if (window.matchMedia('(pointer: fine)').matches) {
+        amount.focus();
+        amount.setSelectionRange(amount.value.length, amount.value.length);
+      }
     });
   }
 
