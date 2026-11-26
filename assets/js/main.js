@@ -1357,6 +1357,7 @@
 
     const load = (slide) => {
       const img = $('img', slide);
+      $$('source[data-srcset]', slide).forEach((s) => { s.srcset = s.dataset.srcset; s.removeAttribute('data-srcset'); });
       if (img && img.dataset.src) {
         if (img.dataset.srcset) img.srcset = img.dataset.srcset;
         img.src = img.dataset.src;

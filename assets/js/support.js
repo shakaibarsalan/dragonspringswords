@@ -442,6 +442,7 @@
       ? `<span class="sl-long">Your conversation</span><span class="sl-short">Your chat</span><span class="support-dot" hidden></span><span class="sl-go">${ICON.chat}</span>`
       : `<span class="sl-long">Ask about a blade, shipping or an order</span><span class="sl-short">Chat with us</span><span class="sl-go">${ICON.send}</span>`;
     launcher.hidden = false;
+    fold();
     checkUnread();
   }
 
@@ -453,6 +454,10 @@
     const dot = launcher && launcher.querySelector('.support-dot');
     if (dot) dot.hidden = !(team > Number(store.get(SEEN) || 0));
   }
+
+  // Scrolling folds the launcher to its round button; back near the top it opens out again (hover does too, in CSS)
+  const fold = () => { if (launcher) launcher.classList.toggle('is-compact', window.scrollY > 60); };
+  window.addEventListener('scroll', fold, { passive: true });
 
   window.DSSupport = { open, close };
   document.addEventListener('click', (e) => {

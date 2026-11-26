@@ -21,8 +21,7 @@
   <link rel="preload" href="/assets/fonts/zen-kaku-gothic-new-v19-400-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/assets/fonts/shippori-mincho-v17-500-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/assets/fonts/cinzel-var-latin.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="preload" as="image" href="/assets/img/hero/emblem-wide-1600.webp" imagesrcset="/assets/img/hero/emblem-wide-1600.webp 1600w, /assets/img/hero/emblem-wide-2560.webp 2560w" imagesizes="100vw" media="(min-width: 768px)" fetchpriority="high" />
-  <link rel="preload" as="image" href="/assets/img/hero/emblem-tall-720.webp" imagesrcset="/assets/img/hero/emblem-tall-720.webp 720w, /assets/img/hero/emblem-tall-1080.webp 1080w" imagesizes="100vw" media="(max-width: 767px)" fetchpriority="high" />
+  <link rel="preload" as="image" href="/assets/img/hero/golden-dragon-hq-1600.webp" imagesrcset="/assets/img/hero/golden-dragon-hq-800.webp 800w, /assets/img/hero/golden-dragon-hq-1600.webp 1600w, /assets/img/hero/golden-dragon-hq-2400.webp 2400w" imagesizes="100vw" fetchpriority="high" />
   <link rel="stylesheet" href="/assets/css/styles.css" />
   <script>
     // Motion is opt-in: elements start hidden only when JS runs and the
@@ -49,20 +48,20 @@
     <!-- HERO, permanent brand photography -->
     <section class="hero" id="hero" data-surface="inverse">
       <div class="hero-media" id="hero-media">
-        <div class="hero-slide is-active" data-caption="The Dragon Spring emblem">
-          <picture>
-            <source media="(max-width: 767px)" srcset="/assets/img/hero/emblem-tall-720.webp 720w, /assets/img/hero/emblem-tall-1080.webp 1080w" sizes="100vw" />
-            <img src="/assets/img/hero/emblem-wide-1600.webp" srcset="/assets/img/hero/emblem-wide-1600.webp 1600w, /assets/img/hero/emblem-wide-2560.webp 2560w" sizes="100vw" width="2560" height="1440" alt="The Dragon Spring emblem, a gold dragon coiled around a katana" fetchpriority="high" />
-          </picture>
+        <div class="hero-slide is-active" style="--pos: 50% 88%; --pos-m: 55% 50%" data-caption="Golden Dragon Katana" data-href="/product/golden-dragon-katana-gold-tone-1060-high-carbon-steel">
+          <img src="/assets/img/hero/golden-dragon-hq-1600.webp" srcset="/assets/img/hero/golden-dragon-hq-800.webp 800w, /assets/img/hero/golden-dragon-hq-1600.webp 1600w, /assets/img/hero/golden-dragon-hq-2400.webp 2400w" sizes="100vw" width="2400" height="2400" alt="Golden Dragon Katana with its gold dragon tsuba" fetchpriority="high" />
         </div>
         <div class="hero-slide" style="--pos: 50% 55%; --pos-m: 42% 50%" data-caption="Rosewood Tachi Katana" data-href="/product/rosewood-tachi-katana-15-fold-clay-tempered-1095-steel">
           <img data-src="/assets/img/hero/tachi-hq-1920.webp" data-srcset="/assets/img/hero/tachi-hq-800.webp 800w, /assets/img/hero/tachi-hq-1280.webp 1280w, /assets/img/hero/tachi-hq-1920.webp 1920w, /assets/img/hero/tachi-hq-2400.webp 2400w" sizes="100vw" width="2400" height="1599" alt="Rosewood Tachi Katana crossed with its saya on a stand" />
         </div>
-        <div class="hero-slide" style="--pos: 50% 88%; --pos-m: 55% 50%" data-caption="Golden Dragon Katana" data-href="/product/golden-dragon-katana-gold-tone-1060-high-carbon-steel">
-          <img data-src="/assets/img/hero/golden-dragon-hq-1600.webp" data-srcset="/assets/img/hero/golden-dragon-hq-800.webp 800w, /assets/img/hero/golden-dragon-hq-1600.webp 1600w, /assets/img/hero/golden-dragon-hq-2400.webp 2400w" sizes="100vw" width="2400" height="2400" alt="Golden Dragon Katana with its gold dragon tsuba" />
+        <div class="hero-slide" style="--pos: 50% 78%; --pos-m: 66% 50%" data-caption="Speckled Black Saya Katana" data-href="/product/speckled-black-saya-katana-gold-dragon-tsuba-1060-steel">
+          <img data-src="/assets/img/hero/dragon-tsuba-hq-1600.webp" data-srcset="/assets/img/hero/dragon-tsuba-hq-800.webp 800w, /assets/img/hero/dragon-tsuba-hq-1600.webp 1600w, /assets/img/hero/dragon-tsuba-hq-2400.webp 2400w" sizes="100vw" width="2400" height="2400" alt="Black-wrapped katana with two gold dragon tsuba" />
         </div>
-        <div class="hero-slide" style="--pos: 50% 28%; --pos-m: 88% 30%" data-caption="Brass-Hilt Viking Sword" data-href="/product/brass-hilt-viking-sword-with-black-scabbard-78-5-cm-carbon">
-          <img data-src="/assets/img/hero/viking-fire-hq-1600.webp" data-srcset="/assets/img/hero/viking-fire-hq-800.webp 800w, /assets/img/hero/viking-fire-hq-1600.webp 1600w, /assets/img/hero/viking-fire-hq-2400.webp 2400w" sizes="100vw" width="2400" height="2400" alt="Brass-Hilt Viking Sword in its scabbard by a fire" />
+        <div class="hero-slide" data-caption="The Dragon Spring emblem">
+          <picture>
+            <source media="(max-width: 767px)" data-srcset="/assets/img/hero/emblem-tall-720.webp 720w, /assets/img/hero/emblem-tall-1080.webp 1080w" sizes="100vw" />
+            <img data-src="/assets/img/hero/emblem-wide-1600.webp" data-srcset="/assets/img/hero/emblem-wide-1600.webp 1600w, /assets/img/hero/emblem-wide-2560.webp 2560w" sizes="100vw" width="2560" height="1440" alt="The Dragon Spring emblem, a gold dragon coiled around a katana" />
+          </picture>
         </div>
       </div>
       <div class="hero-scrim" id="hero-scrim" aria-hidden="true"></div>
@@ -81,12 +80,12 @@
         </div>
       </div>
       <div class="hero-slides-ui" id="hero-slides-ui">
-        <p class="hero-caption" id="hero-caption" aria-live="polite">The Dragon Spring emblem</p>
+        <p class="hero-caption" id="hero-caption" aria-live="polite">Golden Dragon Katana</p>
         <div class="hero-bars" role="group" aria-label="Choose a picture">
-          <button type="button" class="hero-bar is-active" aria-label="Picture 1: the Dragon Spring emblem" aria-current="true"><i></i></button>
+          <button type="button" class="hero-bar is-active" aria-label="Picture 1: Golden Dragon Katana" aria-current="true"><i></i></button>
           <button type="button" class="hero-bar" aria-label="Picture 2: Rosewood Tachi Katana"><i></i></button>
-          <button type="button" class="hero-bar" aria-label="Picture 3: Golden Dragon Katana"><i></i></button>
-          <button type="button" class="hero-bar" aria-label="Picture 4: Brass-Hilt Viking Sword"><i></i></button>
+          <button type="button" class="hero-bar" aria-label="Picture 3: Speckled Black Saya Katana"><i></i></button>
+          <button type="button" class="hero-bar" aria-label="Picture 4: the Dragon Spring emblem"><i></i></button>
         </div>
       </div>
     </section>
