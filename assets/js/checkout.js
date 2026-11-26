@@ -10,13 +10,13 @@
  * can't order; "check" places order without bank details until the owner confirms.
  * The server enforces the same rules when the order is placed.
  *
- * Pay by card (optional, owner switch in the admin): when this piece has a Payoneer
- * link and the order total is exactly its amount, the confirmation also offers
- * "Pay by card (Payoneer)". The server decides; the form text here is only a preview.
+ * Pay by card (optional, owner switch in the admin): no card details are taken here. The
+ * buyer chooses card, and the shop emails them a Payoneer payment request for this order
+ * (Payoneer: a new request for each order). The server decides; this page only previews.
  *
- * Bank transfer is offered only to the countries the owner lists (United States at first).
- * Elsewhere the card link is the only way to pay; when it doesn't apply either, the
- * order can't be placed and the buyer is asked to message the shop instead.
+ * Bank transfer is offered only to the countries the owner lists, when bank details are set.
+ * When card and bank transfer both apply, the buyer chooses; when neither does, the order
+ * can't be placed and the buyer is asked to message the shop instead.
  *
  * On product pages: reveals the "Buy now" button ([data-buy]) when online
  * ordering is switched on in the admin.
@@ -95,8 +95,7 @@
     AU: 'Australia', FI: 'Finland', ES: 'Spain', EE: 'Estonia', SA: 'Saudi Arabia',
   };
   const SUBMIT_PAY = 'Place order and pay by bank transfer';
-  const SUBMIT_CARD = 'Place order and pay by card or bank transfer';
-  const SUBMIT_CARD_ONLY = 'Place order and pay by card';
+  const SUBMIT_CARD = 'Place order and pay by card';
   const SUBMIT_CHECK = 'Place order (we’ll confirm before you pay)';
 
   function countryOptions(cfg) {
@@ -222,7 +221,12 @@
 
           <section class="co-section" data-section="3">
             <header class="co-section-head"><span class="co-num">3</span><div><h2>Confirm</h2><p>No payment is taken on this page.</p></div></header>
-            <div class="co-pay">${CO_ICON.card}<div><p class="co-pay-title">How you’ll pay</p><p id="co-trust-pay">Pay by bank transfer with your order number as reference.</p></div></div>
+            <div class="co-pay" id="co-pay-one">${CO_ICON.card}<div><p class="co-pay-title">How you’ll pay</p><p id="co-trust-pay">Pay by bank transfer with your order number as reference.</p></div></div>
+            <fieldset class="co-paywith" id="co-paywith" hidden>
+              <legend class="co-pay-title">How would you like to pay?</legend>
+              <label class="co-payopt"><input type="radio" name="pay" value="card" checked /><span><strong>Card</strong><small>Visa, Mastercard and more. We email you a secure Payoneer payment request for this order.</small></span></label>
+              <label class="co-payopt"><input type="radio" name="pay" value="bank" /><span><strong>Bank transfer</strong><small>Our bank details come straight away, with your order number as reference.</small></span></label>
+            </fieldset>
             <fieldset class="co-checks">
               <label class="co-check"><input type="checkbox" name="adult" required /> <span>I am <strong>18 or over</strong>, and owning and importing this item is legal where I live. (<a href="/page/age-policy" target="_blank">Age policy</a>)</span></label>
               <label class="co-check"><input type="checkbox" name="agree" required /> <span>I agree to the <a href="/page/terms" target="_blank">terms</a>, <a href="/page/shipping" target="_blank">shipping</a> and <a href="/page/returns" target="_blank">returns</a> policies.</span></label>
@@ -276,14 +280,6 @@
       </div>`;
 
     let qty = 1;
-    // Card (Payoneer link) only fits an order whose total is exactly the link amount.
-    const cardFits = (q = qty) => {
-      if (cfg.cardTotal == null) return false;
-      const subtotal = product.price * q;
-      const free = cfg.freeShippingOver != null && subtotal >= cfg.freeShippingOver;
-      const total = subtotal + (free ? 0 : Number(cfg.shippingFee) || 0);
-      return Math.abs(total - Number(cfg.cardTotal)) < 0.005;
-    };
     function totals() {
       const subtotal = product.price * qty;
       const free = cfg.freeShippingOver != null && subtotal >= cfg.freeShippingOver;
@@ -299,7 +295,7 @@
       b.addEventListener('click', () => {
         qty = Math.min(maxQty, Math.max(1, qty + Number(b.dataset.step)));
         totals();
-        if (!submit.dataset.busy) showVerdict(); // card or bank-only wording depends on the total
+        if (!submit.dataset.busy) showVerdict();
       }),
     );
     totals();
@@ -335,18 +331,24 @@
     let verdict = { blocked: null, needsCheck: false, buyerNotes: [] };
     let checkSeq = 0;
 
-    // How this buyer can pay: bank transfer from their country, and/or the card link for this total.
+    // How this buyer can pay: bank transfer from their country, and/or card (a Payoneer request by email).
+    const payWith = $('#co-paywith');
+    const payOne = $('#co-pay-one');
     function payMethods() {
       const country = countrySel.value;
-      const list = cfg.bankCountries;
-      return { country, bank: !country || !Array.isArray(list) || list.includes(country), card: cardFits() };
+      const list = Array.isArray(cfg.bankCountries) ? cfg.bankCountries : [];
+      return { country, bank: list.length > 0 && (!country || list.includes(country)), card: !!cfg.cards };
     }
+    // the chosen way: from the choice when both apply, otherwise the one that does
+    function chosen(m = payMethods()) {
+      if (m.card && m.bank) return (form.querySelector('input[name="pay"]:checked') || {}).value === 'bank' ? 'bank' : 'card';
+      return m.card ? 'card' : 'bank';
+    }
+    payWith.addEventListener('change', () => showVerdict());
     const THE = ['Czech Republic', 'Dominican Republic', 'Netherlands', 'Philippines', 'United Arab Emirates', 'United Kingdom', 'United States'];
     function noMethodText(country) {
       const place = THE.includes(country) ? `the ${country}` : country;
-      return qty > 1 && cardFits(1)
-        ? `From ${place} you can pay by card for one piece at a time. Set the quantity to 1, or message us by WhatsApp or email to order more.`
-        : `We can’t take bank transfers from ${place} yet, and card payment is coming soon. To order now, message us by WhatsApp or email and we’ll arrange it with you.`;
+      return `We can’t take payment from ${place} online yet. To order now, message us by WhatsApp or email and we’ll arrange it with you.`;
     }
     function contactRow(country) {
       const out = [];
@@ -368,25 +370,25 @@
       rulesBox.hidden = !parts.length;
       rulesBox.classList.toggle('is-blocked', !!verdict.blocked || none);
       submit.disabled = !!verdict.blocked || none;
-      submit.textContent = none ? 'Message us to order' : verdict.needsCheck ? SUBMIT_CHECK : m.card ? (m.bank ? SUBMIT_CARD : SUBMIT_CARD_ONLY) : SUBMIT_PAY;
+      const way = chosen(m);
+      const both = m.card && m.bank && !none && !verdict.blocked;
+      payWith.hidden = !both;
+      payOne.hidden = both;
+      submit.textContent = none ? 'Message us to order' : verdict.needsCheck ? SUBMIT_CHECK : way === 'card' ? SUBMIT_CARD : SUBMIT_PAY;
       submitHint.textContent = verdict.blocked
         ? 'This piece can’t be shipped to the address above.'
         : none
           ? 'Message us and we’ll arrange payment and delivery with you.'
           : verdict.needsCheck
             ? 'No payment now. We’ll check the import rules and email you the payment details, usually within 1–2 working days.'
-            : m.card && m.bank
-              ? 'No payment is taken now. Next you choose: pay by card through Payoneer, or by bank transfer.'
-              : m.card
-                ? 'No payment is taken now. Next you pay by card on Payoneer’s secure page.'
-                : 'No payment is taken now. You’ll get our bank details and your order number straight away.';
+            : way === 'card'
+              ? 'No payment is taken now. We’ll email you a secure Payoneer payment request for this order, usually within one working day.'
+              : 'No payment is taken now. You’ll get our bank details and your order number straight away.';
       $('#co-trust-pay').textContent = none
         ? 'For your country, we arrange payment with you by WhatsApp or email.'
-        : m.card && m.bank
-          ? 'Pay by card through Payoneer, or by bank transfer with your order number as reference.'
-          : m.card
-            ? 'Pay by card on Payoneer’s secure page.'
-            : 'Pay by bank transfer with your order number as reference.';
+        : way === 'card'
+          ? 'Pay by card (Visa, Mastercard and more) through a secure Payoneer payment request, sent to your email.'
+          : 'Pay by bank transfer with your order number as reference.';
     }
 
     async function checkRules() {
@@ -439,7 +441,7 @@
         const res = await fetch('/api/orders', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...data, product: product.slug, variant, qty, adult: true, agree: true, offer: cfg.offer ? cfg.offer.token : '' }),
+          body: JSON.stringify({ ...data, pay: chosen(), product: product.slug, variant, qty, adult: true, agree: true, offer: cfg.offer ? cfg.offer.token : '' }),
         });
         const out = await res.json().catch(() => ({}));
         if (!res.ok || !out.ok) {
@@ -495,14 +497,12 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
-    const card = !!o.cardUrl;
-    const bank = !!o.bankDetails;
+    const card = o.method === 'card';
+    const bank = !card && !!o.bankDetails;
     const days = Number(o.paymentDays) || 5;
-    const intro = card && bank
-      ? `<p>To complete it, pay <strong>${usd(o.total)} USD</strong> by card or by bank transfer within <strong>${days} days</strong>. We’ve also emailed both options to <strong>${esc(o.email)}</strong>.</p>`
-      : card
-        ? `<p>To complete it, pay <strong>${usd(o.total)} USD</strong> by card within <strong>${days} days</strong>. We’ve also emailed the payment link to <strong>${esc(o.email)}</strong>.</p>`
-        : `<p>To complete it, send <strong>${usd(o.total)} USD</strong> by bank transfer within <strong>${days} days</strong>, with <strong>${esc(o.number)}</strong> as the payment reference. We’ve also emailed these details to <strong>${esc(o.email)}</strong>.</p>`;
+    const intro = card
+      ? `<p>To complete it, pay <strong>${usd(o.total)} USD</strong> by card. We’ll email a secure <strong>Payoneer payment request</strong> to <strong>${esc(o.email)}</strong>, usually within one working day. Please pay within <strong>${days} days</strong> of receiving it.</p>`
+      : `<p>To complete it, send <strong>${usd(o.total)} USD</strong> by bank transfer within <strong>${days} days</strong>, with <strong>${esc(o.number)}</strong> as the payment reference. We’ve also emailed these details to <strong>${esc(o.email)}</strong>.</p>`;
     root.innerHTML = `
       <div class="co-done">
         <span class="co-done-mark" aria-hidden="true">${CO_ICON.shield}</span>
@@ -511,14 +511,13 @@
         ${intro}
         ${card
           ? `<div class="co-card">
-          <p class="co-card-title">Pay by card</p>
-          <p>Payoneer’s secure page opens in a new tab. Please use <strong>${esc(o.email)}</strong> as your email there, and if the form has a note field, add your order number <strong>${esc(o.number)}</strong>.</p>
-          <a class="btn btn-dark" href="${esc(o.cardUrl)}" target="_blank" rel="noopener noreferrer">Pay by card (Payoneer) ${usd(o.total)}</a>
+          <p class="co-card-title">Your card payment request</p>
+          <p>It comes by email from Payoneer (payoneer.com), from Dragon Spring Swords, with your order number <strong>${esc(o.number)}</strong>. Open it and pay by card on Payoneer’s secure page. Don’t see it after a working day? Check your spam folder, or message us.</p>
         </div>`
           : ''}
         ${bank
           ? `<div class="co-bank">
-          <div class="co-bank-head"><span>${card ? 'Or pay by bank transfer' : 'Bank transfer details'}</span><button type="button" class="btn btn-outline-dark co-copy" data-copy="bank">Copy</button></div>
+          <div class="co-bank-head"><span>Bank transfer details</span><button type="button" class="btn btn-outline-dark co-copy" data-copy="bank">Copy</button></div>
           <pre id="co-bank-text">Amount: ${usd(o.total)} USD
 Reference: ${esc(o.number)}
 
@@ -527,11 +526,10 @@ ${esc(o.bankDetails)}</pre>
           : ''}
         ${notes}
         <ol class="co-next">
-          <li><strong>Pay</strong>: ${card && bank
-            ? 'by card, or by bank transfer with your order number as reference. For transfers, any bank or transfer fees are paid by the sender, so the full amount arrives.'
-            : card
-              ? 'by card on Payoneer’s page, with the same email as your order.'
-              : 'any bank or transfer fees are paid by the sender, so the full amount arrives.'}</li>
+          ${card ? '<li><strong>We send the request</strong>: a Payoneer payment request for this order, to your email.</li>' : ''}
+          <li><strong>Pay</strong>: ${card
+            ? 'by card on Payoneer’s secure page, from the request.'
+            : 'any bank or transfer fees are paid by the sender, so the full amount arrives.'}</li>
           <li><strong>We confirm</strong>: you’ll get an email as soon as the payment clears.</li>
           <li><strong>We ship</strong>: insured, tracked and signed-for. The tracking number comes by email.</li>
         </ol>
