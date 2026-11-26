@@ -24,7 +24,7 @@
   const S = Object.assign(
     {
       email: 'hello@dragonspringswords.com', whatsapp: '', phone: '', instagram: '', facebook: '',
-      showroom: '', announcement: '', order_note: '', chat_src: '', chat_key: '',
+      showroom: '', announcement: '', order_note: '', chat_src: '', chat_key: '', chat_ai: '0',
     },
     C.settings || {},
   );
@@ -1407,7 +1407,8 @@
      LIVE CHAT, HaloChime widget, switched on from the admin's settings
      ------------------------------------------------------------------------ */
   function initChat() {
-    if (!S.chat_key || !/^https:\/\//.test(S.chat_src || '')) return;
+    // the AI assistant only when switched on in the admin; "Chat with us" (support.js) is always there
+    if (S.chat_ai !== '1' || !S.chat_key || !/^https:\/\//.test(S.chat_src || '')) return;
     // "Talk to a person" inside HaloChime ends the AI chat and opens our own chat (support.js),
     // which lands in the admin's Support inbox.
     window.Halochime = window.Halochime || { q: [] };

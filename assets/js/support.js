@@ -20,7 +20,7 @@
     set(k, v) { try { localStorage.setItem(k, v); } catch (_) {} },
     del(k) { try { localStorage.removeItem(k); } catch (_) {} },
   };
-  const hasHalo = !!(S.chat_key && /^https:\/\//.test(S.chat_src || ''));
+  const hasHalo = !!(S.chat_ai === '1' && S.chat_key && /^https:\/\//.test(S.chat_src || ''));
 
   let token = store.get(KEY);
   let openOnLoad = false;
@@ -271,7 +271,7 @@
     body.innerHTML = msgs.map((m, i) => {
       const next = msgs[i + 1];
       const last = !next || next.from !== m.from; // avatar and time only under the last of a run
-      const who = m.from === 'you' ? 'You' : m.from === 'team' ? 'Dragon Spring team' : 'AI assistant';
+      const who = m.from === 'you' ? 'You' : m.from === 'team' ? 'Dragon Spring team' : 'Dragon Spring (automatic message)';
       return `
         <div class="support-msg is-${esc(m.from)}${last ? ' is-last' : ''}">
           ${m.from === 'team' ? (last ? avatar('support-msg-avatar') : '<span class="support-msg-avatar" aria-hidden="true"></span>') : ''}
@@ -281,7 +281,7 @@
           </div>
         </div>`;
     }).join('') +
-      (msgs.some((m) => m.from === 'team') ? '' : `<p class="support-wait">${ICON.clock}<span>Thanks, someone from the team will reply soon. You can close this; we’ll email you too.</span></p>`) +
+      (msgs.some((m) => m.from === 'team' || m.from === 'assistant') ? '' : `<p class="support-wait">${ICON.clock}<span>Thanks, someone from the team will reply soon. You can close this; we’ll email you too.</span></p>`) +
       `<p class="support-fine support-ref">Reference ${esc(d.number || '')}. You can also reply to our email; it all stays in this conversation.</p>`;
     if (near || shown <= 2) body.scrollTop = body.scrollHeight;
   }
