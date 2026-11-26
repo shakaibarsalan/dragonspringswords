@@ -300,7 +300,7 @@ address { font-style: normal; }
   top: 0;
   z-index: 50;
   border-bottom: 1px solid var(--border-subtle);
-  background: rgb(250 248 244 / 0.85);
+  background: rgb(250 248 244 / 0.95);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   color: var(--ink);
@@ -1605,9 +1605,12 @@ a.contact-card:hover { border-color: var(--ink); }
   .header-row .header-actions { order: 2; flex: none; }
 }
 @media (min-width: 1180px) and (max-width: 1439px) { .header-row .primary-nav { gap: 1.125rem; } }
-.wordmark { --gold: linear-gradient(100deg, #8a6420 0%, #c9973f 22%, #f1d48c 38%, #b88630 52%, #e7c271 68%, #8f6a26 100%); }
+/* light header: deep bronze-gold, at least 3.3:1 against the header in every band (the bright gold is for dark backgrounds) */
+.wordmark { --gold: linear-gradient(100deg, #5a3f10 0%, #7a5718 24%, #94702a 40%, #6d4d14 56%, #86622a 72%, #573c0e 100%);
+  --gold-sub: linear-gradient(100deg, #4e360c 0%, #6a4b14 50%, #4e360c 100%); }
 .site-header.is-transparent .wordmark, .mobile-menu .wordmark, [data-surface="inverse"] .wordmark {
   --gold: linear-gradient(100deg, #b8862e 0%, #f3d38a 24%, #fff1c7 38%, #d6a748 52%, #f7e2a6 68%, #b07f2a 100%);
+  --gold-sub: var(--gold);
 }
 .wordmark-text { display: inline-grid; justify-items: center; gap: 0.3rem; line-height: 1; }
 .wordmark-name, .wordmark-sub {
@@ -1616,12 +1619,12 @@ a.contact-card:hover { border-color: var(--ink); }
   -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
 }
 .wordmark-name { font-size: 1.3125rem; font-weight: 600; letter-spacing: 0.16em; margin-right: -0.16em; }
-.wordmark-sub { display: flex; align-items: center; gap: 0.5rem; width: 100%; font-size: 0.5rem; font-weight: 500; letter-spacing: 0.62em; margin-right: -0.62em; }
-.wordmark-sub::before, .wordmark-sub::after { content: ''; flex: 1; height: 1px; min-width: 1rem; background: var(--gold); opacity: 0.7; transform-origin: center; }
+.wordmark-sub { display: flex; align-items: center; gap: 0.5rem; width: 100%; font-size: 0.5625rem; font-weight: 600; letter-spacing: 0.58em; margin-right: -0.58em; background-image: var(--gold-sub); }
+.wordmark-sub::before, .wordmark-sub::after { content: ''; flex: 1; height: 1px; min-width: 1rem; background: var(--gold-sub); opacity: 0.75; transform-origin: center; }
 .wordmark:hover .wordmark-name, .wordmark:hover .wordmark-sub { animation: wm-glint 1.4s var(--ease-editorial, ease) 1; }
 @media (max-width: 767px) {
   .wordmark-name { font-size: 0.9375rem; letter-spacing: 0.12em; margin-right: -0.12em; }
-  .wordmark-sub { font-size: 0.4375rem; letter-spacing: 0.5em; gap: 0.375rem; }
+  .wordmark-sub { font-size: 0.5rem; letter-spacing: 0.48em; margin-right: -0.48em; gap: 0.375rem; }
 }
 .mobile-menu-top .wordmark-name { font-size: 1rem; }
 
