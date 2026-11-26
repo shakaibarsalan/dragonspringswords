@@ -63,6 +63,8 @@
     clip: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5l-8.6 8.6a5 5 0 0 1-7.1-7.1l8.6-8.6a3.3 3.3 0 0 1 4.7 4.7l-8.6 8.6a1.7 1.7 0 0 1-2.4-2.4l7.9-7.9"/></svg>',
     doc: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8l-5-5z"/><path d="M14 3v5h5"/></svg>',
     clock: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
+    // one tick under the visitor's own messages: sent (they never see whether we've read it)
+    tick: '<svg viewBox="0 0 16 12" width="14" height="11" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 6.5l3.6 3.6L14 1.8"/></svg>',
   };
   // Phones: no automatic focus, so the keyboard doesn't cover the panel the moment it opens.
   const focusSoon = (el) => {
@@ -374,7 +376,7 @@
             : `<a class="support-file" href="${esc(m.file.url)}?token=${encodeURIComponent(token)}">${ICON.doc}<span><strong>${esc(m.file.name)}</strong><small>${esc(m.file.size)} · download</small></span></a>`) : ''}
           ${m.offer ? `<a class="support-offer" href="${esc(m.offer.link)}">${m.offer.image ? `<img src="${esc(m.offer.image)}" alt="" loading="lazy" />` : '<span class="support-offer-img"></span>'}<span class="support-offer-text"><strong>${esc(m.offer.product)}</strong><small>${esc(m.offer.status)}</small></span><span class="support-offer-go">See your offer</span></a>` : ''}
           ${m.text ? `<div class="support-bubble">${esc(m.text)}</div>` : ''}
-          ${last ? `<p class="support-meta">${m.from === 'you' ? 'You · ' : ''}${fmt(m.at)}</p>` : ''}
+          ${last ? `<p class="support-meta">${m.from === 'you' ? 'You · ' : ''}${fmt(m.at)}${m.from === 'you' ? `<span class="support-tick" title="Sent">${ICON.tick}<span class="sr-only">Sent</span></span>` : ''}</p>` : ''}
         </div>`;
     }).join('') +
       (msgs.some((m) => m.from === 'team' || m.from === 'assistant') ? '' : `<p class="support-wait">${ICON.clock}<span>Thanks, someone from the team will reply soon. You can close this; we’ll email you too.</span></p>`);
@@ -438,16 +440,52 @@
     vv.addEventListener('scroll', fitScreen);
   }
 
+  /* Opening grows the chat out of the launcher (or the bottom corner when a link opened it); closing shrinks it
+     back into the launcher, which then simply reappears there. A clip-path that runs from the launcher's shape to
+     the full chat: nothing is stretched, the text stays sharp. Off for "reduce motion". */
+  function cornerRect() {
+    if (launcher) {
+      const was = launcher.hidden;
+      launcher.style.visibility = 'hidden';
+      launcher.hidden = false;
+      const r = launcher.getBoundingClientRect();
+      launcher.hidden = was;
+      launcher.style.visibility = '';
+      if (r.width) return r;
+    }
+    const size = 56;
+    const m = phone() ? 16 : 20;
+    return { left: innerWidth - m - size, top: innerHeight - m - size, right: innerWidth - m, bottom: innerHeight - m, height: size };
+  }
+  const canMorph = () => !reduced() && typeof panel.animate === 'function' && CSS.supports && CSS.supports('clip-path', 'inset(0 round 1px)');
+  function morph(from, opening) {
+    const box = panel.getBoundingClientRect();
+    const reach = phone() ? 0 : 48; // the open end reaches past the edges, so the panel's shadow isn't cut off
+    const small = `inset(${from.top - box.top}px ${box.right - from.right}px ${box.bottom - from.bottom}px ${from.left - box.left}px round ${from.height / 2}px)`;
+    const big = `inset(${-reach}px ${-reach}px ${-reach}px ${-reach}px round ${phone() ? 0 : 28 + reach}px)`;
+    return panel.animate(opening ? [{ clipPath: small }, { clipPath: big }] : [{ clipPath: big }, { clipPath: small }],
+      opening ? { duration: phone() ? 480 : 560, easing: 'cubic-bezier(0.2, 0.9, 0.22, 1)', fill: 'both' }
+        : { duration: phone() ? 300 : 340, easing: 'cubic-bezier(0.55, 0, 0.75, 0.1)', fill: 'both' });
+  }
+
   function open() {
     build();
     if (hasHalo && window.Halochime && typeof window.Halochime.hide === 'function') window.Halochime.hide();
+    const from = launcher && !launcher.hidden ? launcher.getBoundingClientRect() : cornerRect();
+    const grow = !isOpen && canMorph();
     clearTimeout(closeTimer);
+    if (panel.getAnimations) panel.getAnimations().forEach((a) => { if (a.effect && a.effect.target === panel) a.cancel(); });
     panel.classList.remove('is-closing');
+    panel.classList.toggle('is-morph', grow);
     panel.hidden = false;
     isOpen = true;
     fitScreen();
     document.documentElement.classList.add('support-open');
     if (launcher) launcher.hidden = true;
+    if (grow) {
+      const a = morph(from, true);
+      a.onfinish = () => a.cancel(); // done growing: no clip left on the open chat
+    }
     refresh(true);
     clearInterval(timer);
     timer = setInterval(() => { if (token && document.visibilityState === 'visible') refresh(); }, 2500);
@@ -468,15 +506,22 @@
     isOpen = false;
     document.documentElement.classList.remove('support-open');
     clearInterval(timer);
+    const shrink = panel.classList.contains('is-morph') && canMorph();
     const done = () => {
       panel.hidden = true;
-      panel.classList.remove('is-closing');
+      panel.classList.remove('is-closing', 'is-morph');
       if (hasHalo && window.Halochime && typeof window.Halochime.show === 'function') window.Halochime.show();
+      if (launcher && shrink) launcher.classList.add('no-pop'); // the chat just shrank into its place: no second entrance
       updateLauncher();
     };
     if (reduced()) return done();
-    panel.classList.add('is-closing'); // sinks and fades, then the launcher comes back
-    closeTimer = setTimeout(done, 230);
+    panel.classList.add('is-closing');
+    if (shrink) {
+      const a = morph(cornerRect(), false);
+      a.onfinish = () => { done(); a.cancel(); };
+      return;
+    }
+    closeTimer = setTimeout(done, 230); // no clip-path animation here: sinks and fades, then the launcher comes back
   }
 
   /* Launcher: our own bubble when HaloChime is off; a "Your conversation" pill once a chat exists. */
