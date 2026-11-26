@@ -316,6 +316,15 @@
     if (token) focusSoon(compose.querySelector('textarea'));
   }
 
+  // Tapping or clicking anywhere outside the open chat closes it; Escape does too.
+  document.addEventListener('pointerdown', (e) => {
+    if (!isOpen || !panel) return;
+    const t = e.target;
+    if (panel.contains(t) || (launcher && launcher.contains(t)) || (t.closest && t.closest('[data-support-open]'))) return;
+    close();
+  }, true);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && isOpen) close(); });
+
   function close() {
     if (!panel) return;
     panel.hidden = true;

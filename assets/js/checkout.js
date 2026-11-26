@@ -104,12 +104,42 @@
     return out.join('');
   }
 
+
+  // Small line icons for the checkout (stroke = currentColor)
+  const svg = (d) => `<svg class="co-ico" viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
+  const CO_ICON = {
+    shield: svg('<path d="M12 3l8 3v6c0 4.5-3.4 8.4-8 9-4.6-.6-8-4.5-8-9V6l8-3z"/><path d="M8.5 12l2.5 2.5 4.5-5"/>'),
+    blade: svg('<path d="M4 20l9.5-9.5"/><path d="M13.5 10.5L20 4l-1 5-5.5 5.5"/><path d="M6.5 15.5l2 2"/>'),
+    mail: svg('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>'),
+    lock: svg('<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'),
+    card: svg('<rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M2.5 10h19"/><path d="M6.5 15h4"/>'),
+    info: svg('<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>'),
+    bag: svg('<path d="M5 8h14l-1 12H6L5 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>'),
+    chev: svg('<path d="M6 9l6 6 6-6"/>'),
+  };
+  const BADGES = `
+    <ul class="co-badges">
+      <li>${CO_ICON.shield}<span><strong>Insured delivery</strong>Tracked and signed-for, to your door</span></li>
+      <li>${CO_ICON.blade}<span><strong>Hand-sharpened</strong>Checked twice before it ships</span></li>
+      <li>${CO_ICON.mail}<span><strong>Pay after ordering</strong>Payment details come by email</span></li>
+    </ul>`;
+
   function message(title, text, extra = '') {
+    const pic = product && (product.images || [])[0];
     root.innerHTML = `
       <div class="checkout-message">
-        <h1 class="display-md">${esc(title)}</h1>
-        <p>${esc(text)}</p>
-        <div class="checkout-message-actions">${extra}</div>
+        <div class="co-msg-copy">
+          <p class="eyebrow">Checkout</p>
+          <h1 class="display-md">${esc(title)}</h1>
+          <p>${esc(text)}</p>
+          <div class="checkout-message-actions">${extra}</div>
+          ${BADGES}
+        </div>
+        ${product ? `<a class="co-msg-product" href="/product/${esc(product.slug)}">
+          ${pic ? `<img src="${esc(pic)}" alt="" />` : ''}
+          <span class="co-msg-product-text"><span class="co-item-name">${esc(product.name)}</span>
+          ${product.subtitle ? `<span class="co-muted">${esc(product.subtitle)}</span>` : ''}
+          <span class="co-msg-price">${usd(product.price)}</span></span></a>` : ''}
       </div>`;
   }
 
@@ -128,54 +158,77 @@
     }
     const maxQty = Math.max(1, Number(cfg.maxQty) || 1);
     const img = (product.images || [])[0];
+    const wa = S.whatsapp ? ` or <a href="https://wa.me/${esc(S.whatsapp)}?text=${encodeURIComponent('Hello, a question about ' + product.name)}" target="_blank" rel="noopener">WhatsApp</a>` : '';
     root.innerHTML = `
-      <h1 class="display-md checkout-title">Checkout</h1>
+      <div class="co-head">
+        <h1 class="co-title">Checkout</h1>
+        <ol class="co-steps" aria-hidden="true">
+          <li class="is-on" data-for="1"><span>1</span><b>Contact</b></li>
+          <li data-for="2"><span>2</span><b>Delivery</b></li>
+          <li data-for="3"><span>3</span><b>Confirm</b></li>
+        </ol>
+      </div>
+      <button type="button" class="co-summary-toggle" id="co-summary-toggle" aria-expanded="false" aria-controls="co-summary">
+        <span class="co-summary-toggle-label">${CO_ICON.bag}<span>Show order summary</span>${CO_ICON.chev}</span>
+        <strong data-co-total></strong>
+      </button>
       <div class="checkout-layout">
         <form class="checkout-form" id="checkout-form" novalidate>
-          <fieldset>
-            <legend>Your details</legend>
-            <label>Full name <input name="name" autocomplete="name" maxlength="80" required /></label>
+          <section class="co-section" data-section="1">
+            <header class="co-section-head"><span class="co-num">1</span><div><h2>Contact</h2><p>Your order confirmation and payment details go to this email.</p></div></header>
+            <label class="co-field">Full name <input name="name" autocomplete="name" maxlength="80" required /></label>
             <div class="co-grid">
-              <label>Email <input name="email" type="email" autocomplete="email" maxlength="120" required /></label>
-              <label>Phone <small>for the courier</small><input name="phone" type="tel" autocomplete="tel" maxlength="40" required placeholder="+1 555 123 4567" /></label>
+              <label class="co-field">Email <input name="email" type="email" autocomplete="email" maxlength="120" required /></label>
+              <label class="co-field"><span>Phone <small>for the courier</small></span><input name="phone" type="tel" autocomplete="tel" maxlength="40" required placeholder="+1 555 123 4567" /></label>
             </div>
-          </fieldset>
-          <fieldset>
-            <legend>Shipping address</legend>
-            <label>Address <input name="address1" autocomplete="address-line1" maxlength="120" required /></label>
-            <label>Apartment, suite, etc. <small>optional</small><input name="address2" autocomplete="address-line2" maxlength="120" /></label>
+          </section>
+
+          <section class="co-section" data-section="2">
+            <header class="co-section-head"><span class="co-num">2</span><div><h2>Delivery</h2><p>Insured, tracked and signed-for, to your door.</p></div></header>
+            <label class="co-field">Country <select name="country" id="co-country" autocomplete="country-name" required>${countryOptions(cfg)}</select></label>
+            <div class="co-rules" id="co-rules" role="status" aria-live="polite" hidden></div>
+            <label class="co-field">Address <input name="address1" autocomplete="address-line1" maxlength="120" required placeholder="Street and house number" /></label>
+            <label class="co-field"><span>Apartment, suite, etc. <small>optional</small></span><input name="address2" autocomplete="address-line2" maxlength="120" /></label>
             <div class="co-grid co-grid-3">
-              <label>City <input name="city" autocomplete="address-level2" maxlength="80" required /></label>
-              <label id="co-region-label"><span id="co-region-text">State / region</span>
+              <label class="co-field">City <input name="city" autocomplete="address-level2" maxlength="80" required /></label>
+              <label class="co-field" id="co-region-label"><span id="co-region-text">State / region</span>
                 <input name="region" id="co-region-input" autocomplete="address-level1" maxlength="80" />
                 <select name="region" id="co-region-select" autocomplete="address-level1" hidden disabled>
                   <option value="">Choose state</option>${(cfg.auStates || []).map((st) => `<option value="${esc(st)}">${esc(st)}</option>`).join('')}
                 </select>
               </label>
-              <label>Postcode <input name="postcode" autocomplete="postal-code" maxlength="20" /></label>
+              <label class="co-field">Postcode <input name="postcode" autocomplete="postal-code" maxlength="20" /></label>
             </div>
-            <label>Country <select name="country" id="co-country" autocomplete="country-name" required>${countryOptions(cfg)}</select></label>
-            <div class="co-rules" id="co-rules" role="status" aria-live="polite" hidden></div>
-            <p class="co-hint">Some countries restrict importing blades. Please check your local rules. We can’t ship where it isn’t allowed.</p>
-          </fieldset>
-          <fieldset>
-            <legend>Anything we should know? <small>optional</small></legend>
-            <label class="sr-only" for="co-notes">Note</label>
-            <textarea id="co-notes" name="notes" rows="3" maxlength="500" placeholder="Engraving request, delivery instructions…"></textarea>
-          </fieldset>
-          <fieldset class="co-checks">
-            <label class="co-check"><input type="checkbox" name="adult" required /> <span>I am <strong>18 or over</strong>, and owning and importing this item is legal where I live. (<a href="/page/age-policy" target="_blank">Age policy</a>)</span></label>
-            <label class="co-check"><input type="checkbox" name="agree" required /> <span>I agree to the <a href="/page/terms" target="_blank">terms</a>, <a href="/page/shipping" target="_blank">shipping</a> and <a href="/page/returns" target="_blank">returns</a> policies.</span></label>
-          </fieldset>
-          <label class="hp" aria-hidden="true">Website <input name="website" tabindex="-1" autocomplete="off" /></label>
-          <p class="co-error" id="co-error" role="alert" hidden></p>
-          <button type="submit" class="btn btn-dark btn-block co-submit" id="co-submit">${SUBMIT_PAY}</button>
-          <p class="co-hint co-center" id="co-submit-hint">No payment is taken now. You’ll get our bank details and your order number straight away.</p>
+            <p class="co-hint co-hint-ico">${CO_ICON.info}<span>Some countries restrict importing blades. Please check your local rules; we can’t ship where it isn’t allowed.</span></p>
+            <details class="co-note">
+              <summary>Add a note <small>engraving request, delivery instructions</small></summary>
+              <label class="sr-only" for="co-notes">Note</label>
+              <textarea id="co-notes" name="notes" rows="3" maxlength="500" placeholder="Anything we should know?"></textarea>
+            </details>
+          </section>
+
+          <section class="co-section" data-section="3">
+            <header class="co-section-head"><span class="co-num">3</span><div><h2>Confirm</h2><p>No payment is taken on this page.</p></div></header>
+            <div class="co-pay">${CO_ICON.card}<div><p class="co-pay-title">How you’ll pay</p><p id="co-trust-pay">Pay by bank transfer with your order number as reference.</p></div></div>
+            <fieldset class="co-checks">
+              <label class="co-check"><input type="checkbox" name="adult" required /> <span>I am <strong>18 or over</strong>, and owning and importing this item is legal where I live. (<a href="/page/age-policy" target="_blank">Age policy</a>)</span></label>
+              <label class="co-check"><input type="checkbox" name="agree" required /> <span>I agree to the <a href="/page/terms" target="_blank">terms</a>, <a href="/page/shipping" target="_blank">shipping</a> and <a href="/page/returns" target="_blank">returns</a> policies.</span></label>
+            </fieldset>
+            <label class="hp" aria-hidden="true">Website <input name="website" tabindex="-1" autocomplete="off" /></label>
+            <p class="co-error" id="co-error" role="alert" hidden></p>
+            <div class="co-place">
+              <div class="co-place-total"><span>Total</span><strong data-co-total></strong></div>
+              <button type="submit" class="btn btn-dark btn-block co-submit" id="co-submit">${SUBMIT_PAY}</button>
+              <p class="co-hint co-center" id="co-submit-hint">No payment is taken now. You’ll get our bank details and your order number straight away.</p>
+              <p class="co-secure">${CO_ICON.lock}<span>Sent securely. Used only for this order.</span></p>
+            </div>
+          </section>
         </form>
 
-        <aside class="checkout-summary" aria-label="Order summary">
+        <aside class="checkout-summary" id="co-summary" aria-label="Order summary">
+          <p class="co-summary-title">Your order</p>
           <div class="co-item">
-            ${img ? `<img src="${esc(img)}" alt="" />` : ''}
+            ${img ? `<img src="${esc(img)}" alt="" />` : '<span class="co-item-noimg"></span>'}
             <div>
               <p class="co-item-name">${esc(product.name)}</p>
               ${product.subtitle ? `<p class="co-muted">${esc(product.subtitle)}</p>` : ''}
@@ -192,14 +245,20 @@
           </div>
           <dl class="co-totals">
             <div><dt>Subtotal</dt><dd id="co-subtotal"></dd></div>
-            <div><dt>Shipping <small>tracked, signed-for</small></dt><dd id="co-shipping"></dd></div>
+            <div><dt>Shipping <small>insured, tracked, signed-for</small></dt><dd id="co-shipping"></dd></div>
             <div class="co-total"><dt>Total</dt><dd><span id="co-total"></span> <small>USD</small><span class="co-approx" id="co-approx"></span></dd></div>
           </dl>
-          <ul class="co-trust">
-            <li id="co-trust-pay">Pay by bank transfer with your order number as reference.</li>
-            <li>We ship only after your payment clears. Every parcel is insured, tracked and signed-for.</li>
-            <li>Every blade is sharpened and checked by hand before it leaves.</li>
-          </ul>
+          ${BADGES}
+          <div class="co-flow">
+            <p class="co-summary-title">What happens next</p>
+            <ol>
+              <li><strong>You place the order</strong> here, no payment yet.</li>
+              <li><strong>We email the payment details</strong> with your order number.</li>
+              <li><strong>You pay</strong> by bank transfer or card.</li>
+              <li><strong>We ship</strong> within 3 to 5 working days, insured.</li>
+            </ol>
+          </div>
+          <p class="co-help">Questions? <a href="#chat" data-support-open>Chat with us</a>${wa}.</p>
         </aside>
       </div>`;
 
@@ -221,6 +280,7 @@
       $('#co-shipping').textContent = shipping ? usd(shipping) : 'Free';
       $('#co-total').textContent = usd(subtotal + shipping);
       $('#co-approx').textContent = approx(subtotal + shipping);
+      root.querySelectorAll('[data-co-total]').forEach((el) => (el.textContent = usd(subtotal + shipping)));
     }
     root.querySelectorAll('[data-step]').forEach((b) =>
       b.addEventListener('click', () => {
@@ -230,6 +290,26 @@
       }),
     );
     totals();
+
+    // phones: the order summary folds away under a "Show order summary" bar
+    const toggle = $('#co-summary-toggle');
+    const summary = $('#co-summary');
+    toggle.addEventListener('click', () => {
+      const open = !summary.classList.contains('is-open');
+      summary.classList.toggle('is-open', open);
+      toggle.setAttribute('aria-expanded', String(open));
+      toggle.querySelector('.co-summary-toggle-label span').textContent = open ? 'Hide order summary' : 'Show order summary';
+    });
+    // the step bar follows where the buyer is in the form
+    const steps = root.querySelectorAll('.co-steps li');
+    root.querySelectorAll('.co-section').forEach((sec) => sec.addEventListener('focusin', () => {
+      const n = Number(sec.dataset.section);
+      steps.forEach((li) => {
+        const k = Number(li.dataset.for);
+        li.classList.toggle('is-on', k === n);
+        li.classList.toggle('is-done', k < n);
+      });
+    }));
 
     const form = $('#checkout-form');
     const error = $('#co-error');
@@ -387,6 +467,7 @@
     if (o.needsCheck) {
       root.innerHTML = `
       <div class="co-done">
+        <span class="co-done-mark" aria-hidden="true">${CO_ICON.mail}</span>
         <p class="eyebrow">Order received</p>
         <h1 class="display-md">Thank you. Your order number is <span class="co-number">${esc(o.number)}</span></h1>
         <p><strong>Please don’t pay yet.</strong> Importing swords into your country can need a permit, so we check the current rules for every sword order first. We’ll email <strong>${esc(o.email)}</strong> with the payment details, usually within 1–2 working days, or tell you if we can’t ship it.</p>
@@ -411,6 +492,7 @@
         : `<p>To complete it, send <strong>${usd(o.total)} USD</strong> by bank transfer within <strong>${days} days</strong>, with <strong>${esc(o.number)}</strong> as the payment reference. We’ve also emailed these details to <strong>${esc(o.email)}</strong>.</p>`;
     root.innerHTML = `
       <div class="co-done">
+        <span class="co-done-mark" aria-hidden="true">${CO_ICON.shield}</span>
         <p class="eyebrow">Order placed</p>
         <h1 class="display-md">Thank you. Your order number is <span class="co-number">${esc(o.number)}</span></h1>
         ${intro}
