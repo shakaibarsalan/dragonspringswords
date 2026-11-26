@@ -20,6 +20,7 @@
   <link rel="apple-touch-icon" href="/assets/img/brand/apple-touch-icon.png" />
   <link rel="preload" href="/assets/fonts/zen-kaku-gothic-new-v19-400-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/assets/fonts/shippori-mincho-v17-500-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/assets/fonts/cinzel-var-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="/assets/css/styles.css" />
   <script>
     // Motion is opt-in: elements start hidden only when JS runs and the
@@ -41,34 +42,22 @@
   <dialog class="review-dialog" id="review-dialog" aria-labelledby="review-title">
     <form id="review-form" novalidate>
       <div class="review-dialog-head">
-        <h2 id="review-title" class="display-sm">Review your order</h2>
+        <h2 id="review-title" class="display-sm">Reviews come from buyers</h2>
         <button type="button" class="review-close" id="review-close" aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
       </div>
-      <p class="review-help">We check every review against our orders. Only your first name and last initial are shown.</p>
-      <fieldset class="rating">
-        <legend>Your rating</legend>
-        <div class="rating-stars">
-          <input type="radio" name="rating" id="r5" value="5" /><label for="r5" title="5 stars">★</label>
-          <input type="radio" name="rating" id="r4" value="4" /><label for="r4" title="4 stars">★</label>
-          <input type="radio" name="rating" id="r3" value="3" /><label for="r3" title="3 stars">★</label>
-          <input type="radio" name="rating" id="r2" value="2" /><label for="r2" title="2 stars">★</label>
-          <input type="radio" name="rating" id="r1" value="1" /><label for="r1" title="1 star">★</label>
-        </div>
-      </fieldset>
-      <label>Product <select name="product" id="review-product"><option value="">Choose…</option></select></label>
-      <label>Your review <textarea name="body" rows="4" maxlength="800" required placeholder="How is the blade, the finish, the delivery?"></textarea></label>
+      <p class="review-help">Only people who bought from us can write a review. When your order arrives, we email you a private link to review it. Lost that email? Enter your order number and the email you ordered with, and we’ll send it again.</p>
       <div class="review-grid">
-        <label>Full name <input name="name" autocomplete="name" maxlength="60" required /></label>
-        <label>Order number <input name="order" maxlength="40" required placeholder="e.g. DS-1042" /></label>
+        <label>Order number <input name="order" maxlength="40" required placeholder="e.g. DS-1042" autocomplete="off" /></label>
+        <label>Email used for the order <input name="email" type="email" autocomplete="email" maxlength="120" required /></label>
       </div>
-      <label>Email used for the order <input name="email" type="email" autocomplete="email" maxlength="120" required /></label>
       <label class="hp" aria-hidden="true">Website <input name="website" tabindex="-1" autocomplete="off" /></label>
       <p class="review-error" id="review-error" role="alert" hidden></p>
-      <button type="submit" class="btn btn-dark" id="review-submit">Send review</button>
+      <button type="submit" class="btn btn-dark" id="review-submit">Email me my review link</button>
+      <p class="review-help" id="review-elsewhere">Bought from us on WhatsApp, by email or on Etsy? Message us and we’ll send you a review link.</p>
     </form>
     <div class="review-thanks" id="review-thanks" hidden>
-      <h2 class="display-sm">Thank you</h2>
-      <p>Your review will appear once we’ve matched it to your order.</p>
+      <h2 class="display-sm">Check your inbox</h2>
+      <p>If that order has shipped, your review link is on its way to that address. It can take a few minutes, so check spam too.</p>
       <button type="button" class="btn btn-dark" id="review-done">Close</button>
     </div>
   </dialog>

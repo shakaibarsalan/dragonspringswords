@@ -20,6 +20,7 @@
   <link rel="apple-touch-icon" href="/assets/img/brand/apple-touch-icon.png" />
   <link rel="preload" href="/assets/fonts/zen-kaku-gothic-new-v19-400-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/assets/fonts/shippori-mincho-v17-500-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/assets/fonts/cinzel-var-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" as="image" href="/assets/img/hero/emblem-wide-1600.webp" imagesrcset="/assets/img/hero/emblem-wide-1600.webp 1600w, /assets/img/hero/emblem-wide-2560.webp 2560w" imagesizes="100vw" media="(min-width: 768px)" fetchpriority="high" />
   <link rel="preload" as="image" href="/assets/img/hero/emblem-tall-720.webp" imagesrcset="/assets/img/hero/emblem-tall-720.webp 720w, /assets/img/hero/emblem-tall-1080.webp 1080w" imagesizes="100vw" media="(max-width: 767px)" fetchpriority="high" />
   <link rel="stylesheet" href="/assets/css/styles.css" />
@@ -32,6 +33,16 @@
   </script>
 </head>
 <body data-page="home">
+  <!-- Intro: the logo-reveal film (Google Flow / Veo, from the Blender logo). Once a week per visitor,
+       skippable; never for reduced motion, data saver, slow connections or bots. main.js plays it. -->
+  <div class="intro" id="intro" hidden>
+    <video id="intro-video" muted playsinline preload="auto" poster="/assets/video/logo-reveal-poster.webp" aria-label="Dragon Spring Swords logo animation">
+      <source src="/assets/video/logo-reveal-720p.mp4?v=1" type="video/mp4" media="(max-width: 900px)" />
+      <source src="/assets/video/logo-reveal-1080p.mp4?v=1" type="video/mp4" />
+    </video>
+    <button type="button" class="intro-skip" id="intro-skip">Skip intro</button>
+  </div>
+  <script>(function(){try{var ok=!matchMedia('(prefers-reduced-motion: reduce)').matches&&!navigator.webdriver&&!/bot|crawl|spider|lighthouse|headless|preview/i.test(navigator.userAgent);var c=navigator.connection;if(c&&(c.saveData||/(^|-)(2g|3g)$/.test(c.effectiveType||'')))ok=false;if(/[?&]nointro/.test(location.search))ok=false;if(ok&&Date.now()-(+localStorage.getItem('ds-intro-at')||0)<6048e5)ok=false;if(ok){localStorage.setItem('ds-intro-at',Date.now());document.documentElement.classList.add('has-intro');document.getElementById('intro').hidden=false;}}catch(e){}})();</script>
   <div id="layout-top"></div>
 
   <main id="main" style="position:relative">
@@ -47,13 +58,13 @@
           </picture>
         </div>
         <div class="hero-slide" style="--pos: 50% 55%; --pos-m: 42% 50%" data-caption="Rosewood Tachi Katana" data-href="/product/rosewood-tachi-katana-15-fold-clay-tempered-1095-steel">
-          <img data-src="/assets/img/hero/tachi-1280.webp" data-srcset="/assets/img/hero/tachi-800.webp 800w, /assets/img/hero/tachi-1280.webp 1280w" sizes="100vw" width="1280" height="853" alt="Rosewood Tachi Katana crossed with its saya on a stand" />
+          <img data-src="/assets/img/hero/tachi-hq-1920.webp" data-srcset="/assets/img/hero/tachi-hq-800.webp 800w, /assets/img/hero/tachi-hq-1280.webp 1280w, /assets/img/hero/tachi-hq-1920.webp 1920w, /assets/img/hero/tachi-hq-2400.webp 2400w" sizes="100vw" width="2400" height="1599" alt="Rosewood Tachi Katana crossed with its saya on a stand" />
         </div>
         <div class="hero-slide" style="--pos: 50% 88%; --pos-m: 55% 50%" data-caption="Golden Dragon Katana" data-href="/product/golden-dragon-katana-gold-tone-1060-high-carbon-steel">
-          <img data-src="/assets/img/hero/golden-dragon-1588.webp" data-srcset="/assets/img/hero/golden-dragon-800.webp 800w, /assets/img/hero/golden-dragon-1588.webp 1588w" sizes="100vw" width="1588" height="1588" alt="Golden Dragon Katana with its gold dragon tsuba" />
+          <img data-src="/assets/img/hero/golden-dragon-hq-1600.webp" data-srcset="/assets/img/hero/golden-dragon-hq-800.webp 800w, /assets/img/hero/golden-dragon-hq-1600.webp 1600w, /assets/img/hero/golden-dragon-hq-2400.webp 2400w" sizes="100vw" width="2400" height="2400" alt="Golden Dragon Katana with its gold dragon tsuba" />
         </div>
         <div class="hero-slide" style="--pos: 50% 28%; --pos-m: 88% 30%" data-caption="Brass-Hilt Viking Sword" data-href="/product/brass-hilt-viking-sword-with-black-scabbard-78-5-cm-carbon">
-          <img data-src="/assets/img/hero/viking-fire-1600.webp" data-srcset="/assets/img/hero/viking-fire-800.webp 800w, /assets/img/hero/viking-fire-1600.webp 1600w" sizes="100vw" width="1600" height="1600" alt="Brass-Hilt Viking Sword in its scabbard by a fire" />
+          <img data-src="/assets/img/hero/viking-fire-hq-1600.webp" data-srcset="/assets/img/hero/viking-fire-hq-800.webp 800w, /assets/img/hero/viking-fire-hq-1600.webp 1600w, /assets/img/hero/viking-fire-hq-2400.webp 2400w" sizes="100vw" width="2400" height="2400" alt="Brass-Hilt Viking Sword in its scabbard by a fire" />
         </div>
       </div>
       <div class="hero-scrim" id="hero-scrim" aria-hidden="true"></div>
@@ -187,34 +198,22 @@
   <dialog class="review-dialog" id="review-dialog" aria-labelledby="review-title">
     <form id="review-form" novalidate>
       <div class="review-dialog-head">
-        <h2 id="review-title" class="display-sm">Review your order</h2>
+        <h2 id="review-title" class="display-sm">Reviews come from buyers</h2>
         <button type="button" class="review-close" id="review-close" aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
       </div>
-      <p class="review-help">We check every review against our orders. Only your first name and last initial are shown.</p>
-      <fieldset class="rating">
-        <legend>Your rating</legend>
-        <div class="rating-stars">
-          <input type="radio" name="rating" id="r5" value="5" /><label for="r5" title="5 stars">★</label>
-          <input type="radio" name="rating" id="r4" value="4" /><label for="r4" title="4 stars">★</label>
-          <input type="radio" name="rating" id="r3" value="3" /><label for="r3" title="3 stars">★</label>
-          <input type="radio" name="rating" id="r2" value="2" /><label for="r2" title="2 stars">★</label>
-          <input type="radio" name="rating" id="r1" value="1" /><label for="r1" title="1 star">★</label>
-        </div>
-      </fieldset>
-      <label>Product <select name="product" id="review-product"><option value="">Choose…</option></select></label>
-      <label>Your review <textarea name="body" rows="4" maxlength="800" required placeholder="How is the blade, the finish, the delivery?"></textarea></label>
+      <p class="review-help">Only people who bought from us can write a review. When your order arrives, we email you a private link to review it. Lost that email? Enter your order number and the email you ordered with, and we’ll send it again.</p>
       <div class="review-grid">
-        <label>Full name <input name="name" autocomplete="name" maxlength="60" required /></label>
-        <label>Order number <input name="order" maxlength="40" required placeholder="e.g. DS-1042" /></label>
+        <label>Order number <input name="order" maxlength="40" required placeholder="e.g. DS-1042" autocomplete="off" /></label>
+        <label>Email used for the order <input name="email" type="email" autocomplete="email" maxlength="120" required /></label>
       </div>
-      <label>Email used for the order <input name="email" type="email" autocomplete="email" maxlength="120" required /></label>
       <label class="hp" aria-hidden="true">Website <input name="website" tabindex="-1" autocomplete="off" /></label>
       <p class="review-error" id="review-error" role="alert" hidden></p>
-      <button type="submit" class="btn btn-dark" id="review-submit">Send review</button>
+      <button type="submit" class="btn btn-dark" id="review-submit">Email me my review link</button>
+      <p class="review-help" id="review-elsewhere">Bought from us on WhatsApp, by email or on Etsy? Message us and we’ll send you a review link.</p>
     </form>
     <div class="review-thanks" id="review-thanks" hidden>
-      <h2 class="display-sm">Thank you</h2>
-      <p>Your review will appear once we’ve matched it to your order.</p>
+      <h2 class="display-sm">Check your inbox</h2>
+      <p>If that order has shipped, your review link is on its way to that address. It can take a few minutes, so check spam too.</p>
       <button type="button" class="btn btn-dark" id="review-done">Close</button>
     </div>
   </dialog>

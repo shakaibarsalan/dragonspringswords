@@ -95,41 +95,15 @@
     JPY: 'Japanese yen', CNY: 'Chinese yuan', TRY: 'Turkish lira', MYR: 'Malaysian ringgit',
     SGD: 'Singapore dollar', QAR: 'Qatari riyal', KWD: 'Kuwaiti dinar', CHF: 'Swiss franc',
   };
-  const COUNTRY_CURRENCY = {
-    PK: 'PKR', US: 'USD', GB: 'GBP', AE: 'AED', SA: 'SAR', CA: 'CAD', AU: 'AUD', IN: 'INR', JP: 'JPY',
-    CN: 'CNY', TR: 'TRY', MY: 'MYR', SG: 'SGD', QA: 'QAR', KW: 'KWD', CH: 'CHF', LI: 'CHF',
-  };
-  'AT BE CY DE EE ES FI FR GR HR IE IT LT LU LV MT NL PT SI SK'.split(' ').forEach((c) => (COUNTRY_CURRENCY[c] = 'EUR'));
-  const TZ_COUNTRY = {
-    'Asia/Karachi': 'PK', 'Europe/London': 'GB', 'Asia/Dubai': 'AE', 'Asia/Riyadh': 'SA',
-    'Asia/Kolkata': 'IN', 'Asia/Calcutta': 'IN', 'Asia/Tokyo': 'JP', 'Asia/Shanghai': 'CN',
-    'Europe/Istanbul': 'TR', 'Europe/Zurich': 'CH', 'Europe/Vaduz': 'LI', 'Asia/Kuala_Lumpur': 'MY', 'Asia/Singapore': 'SG', 'Asia/Qatar': 'QA',
-    'Asia/Kuwait': 'KW', 'America/Toronto': 'CA', 'America/Vancouver': 'CA', 'America/Edmonton': 'CA',
-    'America/Winnipeg': 'CA', 'America/Halifax': 'CA',
-  };
   const STORE_KEY = 'dragonspring:currency';
 
-  function detectCountry() {
-    if (currencyData.country && currencyData.country !== 'XX') return currencyData.country;
-    try {
-      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-      if (TZ_COUNTRY[tz]) return TZ_COUNTRY[tz];
-      if (tz.startsWith('Australia/')) return 'AU';
-      if (tz.startsWith('America/')) return 'US';
-      if (tz.startsWith('Europe/')) return 'DE';
-    } catch (_) {}
-    const lang = (navigator.languages && navigator.languages[0]) || navigator.language || '';
-    const region = lang.split('-')[1];
-    return region ? region.toUpperCase() : '';
-  }
-
+  // Prices show in US dollars for everyone until the visitor picks another currency;
+  // their pick is remembered on that device.
   function pickCurrency() {
     try {
       const saved = localStorage.getItem(STORE_KEY);
       if (saved && rates[saved]) return saved;
     } catch (_) {}
-    const byCountry = COUNTRY_CURRENCY[detectCountry()];
-    if (byCountry && rates[byCountry]) return byCountry;
     return 'USD';
   }
 
@@ -236,7 +210,7 @@
             ${links.map((l) => `<a class="underline-grow${l.key === key ? ' is-drawn' : ''}" href="${esc(l.href)}"${l.key === key ? ' aria-current="page"' : ''}${l.optional ? ` data-nav-optional="${l.optional}"` : ''}>${esc(l.label)}</a>`).join('')}
           </nav>
           <button type="button" class="menu-toggle" id="menu-open" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu">${icon('menu', 'icon icon-20')}</button>
-          <a href="/" class="wordmark" aria-label="Dragon Spring Swords home page"><img class="wordmark-mark" src="/assets/img/brand/logo-mark.webp" alt="" width="44" height="44" decoding="async" /><span>Dragon Spring</span></a>
+          <a href="/" class="wordmark" aria-label="Dragon Spring Swords home page"><img class="wordmark-mark" src="/assets/img/brand/logo-mark.webp" alt="" width="44" height="44" decoding="async" /><span class="wordmark-text"><span class="wordmark-name">Dragon Spring</span><span class="wordmark-sub">Swords</span></span></a>
           <div class="header-actions">
             ${currencyPicker('hide-md')}
             <a href="/shop?focus=search" class="icon-link" aria-label="Search the shop">${icon('search', 'icon')}</a>
@@ -245,7 +219,7 @@
       </header>
       <div class="mobile-menu" id="mobile-menu" role="dialog" aria-modal="true" aria-label="Menu">
         <div class="shell mobile-menu-top">
-          <span class="wordmark"><img class="wordmark-mark" src="/assets/img/brand/logo-mark.webp" alt="" width="36" height="36" decoding="async" /><span>Dragon Spring</span></span>
+          <span class="wordmark"><img class="wordmark-mark" src="/assets/img/brand/logo-mark.webp" alt="" width="36" height="36" decoding="async" /><span class="wordmark-text"><span class="wordmark-name">Dragon Spring</span><span class="wordmark-sub">Swords</span></span></span>
           <button type="button" id="menu-close" aria-label="Close menu">${icon('x', 'icon icon-20')}</button>
         </div>
         <nav class="shell" aria-label="Primary">
@@ -548,6 +522,8 @@
     show(0, false);
   }
 
+  // "Write a review": reviews come from buyers only, through the private link we email
+  // after delivery. This dialog sends that link again to the email on the order.
   function initReviewForm() {
     const dialog = $('#review-dialog');
     if (!dialog || !C.reviewsLive) return;
@@ -555,13 +531,11 @@
     const error = $('#review-error');
     const thanks = $('#review-thanks');
     const submit = $('#review-submit');
-    const select = $('#review-product');
-    (C.reviewProducts || []).forEach((name) => {
-      const opt = document.createElement('option');
-      opt.value = opt.textContent = name;
-      select.appendChild(opt);
-    });
-    select.insertAdjacentHTML('beforeend', '<option value="Other">Something else</option>');
+    const elsewhere = $('#review-elsewhere');
+    const contact = S.whatsapp ? `https://wa.me/${S.whatsapp}` : S.email ? `mailto:${S.email}` : '';
+    if (elsewhere && contact) {
+      elsewhere.innerHTML = `Bought from us on WhatsApp, by email or on Etsy? <a href="${esc(contact)}" target="_blank" rel="noopener">Message us</a> and we’ll send you a review link.`;
+    }
 
     const close = () => (dialog.close ? dialog.close() : dialog.removeAttribute('open'));
     $$('[data-review-open]').forEach((btn) =>
@@ -569,7 +543,6 @@
         form.hidden = false;
         thanks.hidden = true;
         error.hidden = true;
-        if (btn.dataset.product) select.value = btn.dataset.product;
         dialog.showModal ? dialog.showModal() : dialog.setAttribute('open', '');
       }),
     );
@@ -581,17 +554,15 @@
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const data = Object.fromEntries(new FormData(form).entries());
-      const ok =
-        data.rating && data.body.trim() && data.name.trim() && data.order.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(data.email.trim());
-      if (!ok) {
-        error.textContent = 'Please choose a star rating and fill in every field.';
+      if (!data.order.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(data.email.trim())) {
+        error.textContent = 'Please enter your order number and the email you ordered with.';
         error.hidden = false;
         return;
       }
       submit.disabled = true;
       submit.textContent = 'Sending…';
       try {
-        const res = await fetch('/api/reviews', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+        const res = await fetch('/api/reviews/link', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
         const out = await res.json().catch(() => ({}));
         if (!res.ok || !out.ok) throw new Error(out.error || 'Something went wrong. Please try again.');
         form.reset();
@@ -602,7 +573,7 @@
         error.hidden = false;
       } finally {
         submit.disabled = false;
-        submit.textContent = 'Send review';
+        submit.textContent = 'Email me my review link';
       }
     });
   }
@@ -1114,10 +1085,11 @@
       const optional = $$('[data-nav-optional]', nav).sort((a, b) => b.dataset.navOptional - a.dataset.navOptional);
       optional.forEach((a) => (a.hidden = false));
       if (getComputedStyle(nav).display === 'none') return;
-      const limit = mark.getBoundingClientRect().left - 24;
-      const right = () => Math.max(...$$('a:not([hidden])', nav).map((a) => a.getBoundingClientRect().right));
+      // links sit to the right of the wordmark: drop the optional ones while they would touch it
+      const limit = mark.getBoundingClientRect().right + 32;
+      const left = () => Math.min(...$$('a:not([hidden])', nav).map((a) => a.getBoundingClientRect().left));
       for (const a of optional) {
-        if (right() <= limit) break;
+        if (left() >= limit) break;
         a.hidden = true;
       }
     }
@@ -1551,9 +1523,95 @@
   }
 
   /* ---------------------------------------------------------------------------
+     HOMEPAGE INTRO: the logo-reveal film. index.html decides whether to show it
+     (adds html.has-intro); here it plays, then fades into the page and hands over
+     to the header wordmark's own entrance. Never blocks the page: it gives up if
+     the video can't start within 3 seconds, and ends after 10 at most.
+     ------------------------------------------------------------------------ */
+  function initIntro(after) {
+    const box = $('#intro');
+    const video = $('#intro-video');
+    if (!box || !video || !document.documentElement.classList.contains('has-intro')) {
+      after();
+      return;
+    }
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      box.classList.add('is-leaving');
+      document.documentElement.classList.remove('has-intro');
+      setTimeout(() => {
+        box.remove();
+        after();
+      }, 700);
+    };
+    $('#intro-skip').addEventListener('click', finish);
+    video.addEventListener('ended', () => setTimeout(finish, 600));
+    video.addEventListener('error', finish);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') finish(); });
+    const start = setTimeout(() => { if (video.currentTime < 0.1) finish(); }, 3000);
+    video.addEventListener('playing', () => clearTimeout(start), { once: true });
+    setTimeout(finish, 10000);
+    const p = video.play();
+    if (p && p.catch) p.catch(finish);
+  }
+
+  /* ---------------------------------------------------------------------------
+     WORDMARK ENTRANCE: the medallion turns in, "Dragon Spring" draws together from
+     wide spacing, a gold glint runs across it and "Swords" opens between two rules.
+     Once per visit; hovering the logo replays the glint.
+     ------------------------------------------------------------------------ */
+  function initWordmarkIntro() {
+    const marks = $$('.site-header .wordmark');
+    if (!marks.length || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    let seen = false;
+    try {
+      seen = sessionStorage.getItem('ds-wordmark-seen') === '1';
+      sessionStorage.setItem('ds-wordmark-seen', '1');
+    } catch (e) { /* storage blocked: play it */ }
+    if (seen) return;
+    marks.forEach((m) => {
+      m.classList.add('is-intro');
+      setTimeout(() => m.classList.remove('is-intro'), 3200);
+    });
+  }
+
+  /* ---------------------------------------------------------------------------
+     VISITOR STATS: one small ping per page for the admin's Visitors page, plus one
+     when someone taps Order on WhatsApp or Email to order. No cookies; the server
+     turns the connection into an anonymous code. ?notrack=1 stops counting this
+     device (the shop owner's own browsing), ?notrack=0 starts it again.
+     ------------------------------------------------------------------------ */
+  function initVisits() {
+    const q = new URLSearchParams(location.search);
+    try {
+      if (q.has('notrack')) {
+        if (q.get('notrack') === '0') localStorage.removeItem('ds-notrack');
+        else localStorage.setItem('ds-notrack', '1');
+      }
+      if (localStorage.getItem('ds-notrack') === '1') return;
+    } catch (e) { /* storage blocked: count as usual */ }
+    if (navigator.webdriver || !window.JSON) return;
+    const send = (data) => {
+      const body = JSON.stringify(data);
+      try {
+        if (navigator.sendBeacon && navigator.sendBeacon('/api/visit', body)) return;
+      } catch (e) { /* fall back to fetch */ }
+      if (window.fetch) fetch('/api/visit', { method: 'POST', body, keepalive: true, headers: { 'Content-Type': 'text/plain' } }).catch(() => {});
+    };
+    send({ k: 'view', p: location.pathname, s: q.get('p') || '', r: document.referrer || '', u: q.get('utm_source') || '' });
+    document.addEventListener('click', (e) => {
+      const a = e.target.closest && e.target.closest('#order-wa, #order-mail');
+      if (a) send({ k: 'ask', p: location.pathname, c: a.id === 'order-wa' ? 'whatsapp' : 'email' });
+    }, true);
+  }
+
+  /* ---------------------------------------------------------------------------
      BOOT
      ------------------------------------------------------------------------ */
   renderLayout();
+  initIntro(initWordmarkIntro);
   initCurrencyPickers();
   if (PAGE === 'home') renderHome();
   if (PAGE === 'shop') renderShop();
@@ -1569,6 +1627,7 @@
   initHeroSlides();
   initLookbook();
   initEmberCursor();
+  initVisits();
   // initSmoothScroll() is kept but switched off: JS-driven wheel scrolling runs on the
   // main thread and stuttered on the homepage; the browser's own scrolling stays smooth.
   initChat();
