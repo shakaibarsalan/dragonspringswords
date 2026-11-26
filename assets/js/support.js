@@ -64,6 +64,7 @@
     clip: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5l-8.6 8.6a5 5 0 0 1-7.1-7.1l8.6-8.6a3.3 3.3 0 0 1 4.7 4.7l-8.6 8.6a1.7 1.7 0 0 1-2.4-2.4l7.9-7.9"/></svg>',
     doc: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8l-5-5z"/><path d="M14 3v5h5"/></svg>',
     clock: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
+    x: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>',
     // one tick under the visitor's own messages: sent (they never see whether we've read it)
     tick: '<svg viewBox="0 0 16 12" width="14" height="11" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 6.5l3.6 3.6L14 1.8"/></svg>',
   };
@@ -112,6 +113,13 @@
     compose = panel.querySelector('.support-compose');
     body.addEventListener('scroll', () => { stick = body.scrollHeight - body.scrollTop - body.clientHeight < 48; }, { passive: true });
     body.addEventListener('load', () => { if (stick) toLatest(); }, true); // a photo arrived and pushed the latest down
+    body.addEventListener('click', (e) => {
+      const a = e.target.closest('.support-photo');
+      if (!a || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; // modified clicks: a new tab as before
+      e.preventDefault();
+      const img = a.querySelector('img');
+      openPhoto(a.href, img ? img.alt : '');
+    });
     panel.querySelector('.support-close').addEventListener('click', close);
     panel.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
     const ta = compose.querySelector('textarea');
@@ -390,6 +398,53 @@
     if (near || stick || shown <= 2) toLatest();
   }
 
+  /* A photo in the chat opens in a card over everything (not a new tab): the cross, a tap or click beside the card,
+     or Escape closes it. It lives inside the chat element, so tapping beside it doesn't also close the chat. */
+  let viewer = null;
+  let viewerFrom = null;
+  let viewerTimer = 0;
+  function openPhoto(href, name) {
+    if (!viewer) {
+      viewer = document.createElement('div');
+      viewer.className = 'support-viewer';
+      viewer.hidden = true;
+      viewer.setAttribute('role', 'dialog');
+      viewer.setAttribute('aria-modal', 'true');
+      viewer.setAttribute('aria-label', 'Photo');
+      viewer.innerHTML = `<figure class="support-viewer-card">
+          <button type="button" class="support-viewer-close" aria-label="Close photo">${ICON.x}</button>
+          <img alt="" />
+          <figcaption><span></span><a download>Download</a></figcaption>
+        </figure>`;
+      viewer.addEventListener('click', (e) => {
+        if (!e.target.closest('.support-viewer-card') || e.target.closest('.support-viewer-close')) closePhoto();
+      });
+      panel.appendChild(viewer);
+    }
+    clearTimeout(viewerTimer);
+    viewerFrom = document.activeElement;
+    const img = viewer.querySelector('img');
+    img.src = href;
+    img.alt = name || 'Photo';
+    viewer.querySelector('figcaption span').textContent = name || '';
+    const dl = viewer.querySelector('figcaption a');
+    dl.href = href;
+    dl.setAttribute('download', name || 'photo');
+    viewer.hidden = false;
+    requestAnimationFrame(() => viewer.classList.add('is-open'));
+    viewer.querySelector('.support-viewer-close').focus({ preventScroll: true });
+  }
+  function closePhoto() {
+    if (!viewer || viewer.hidden) return;
+    viewer.classList.remove('is-open');
+    viewerTimer = setTimeout(() => { viewer.hidden = true; viewer.querySelector('img').removeAttribute('src'); }, reduced() ? 0 : 180);
+    if (viewerFrom && viewerFrom.focus) viewerFrom.focus({ preventScroll: true });
+  }
+  // Escape closes the photo first (and only the photo), before the chat's own Escape
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && viewer && !viewer.hidden) { e.preventDefault(); e.stopPropagation(); closePhoto(); }
+  }, true);
+
   /* The conversation always opens on its latest message. A hidden panel forgets where it was scrolled (it came
      back at the oldest message), and photos load after the first paint and make it taller, so this goes to the
      end on opening and a few times while it settles, and stops as soon as the visitor scrolls up. */
@@ -524,6 +579,7 @@
 
   function close() {
     if (!panel || !isOpen) return;
+    closePhoto();
     isOpen = false;
     document.documentElement.classList.remove('support-open');
     clearInterval(timer);
