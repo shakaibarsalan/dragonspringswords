@@ -173,7 +173,7 @@
   }
 
   function note(text) {
-    let el = panel.querySelector('.support-error');
+    let el = panel.querySelector(':scope > .support-error'); // the one above the message box, not a form's own
     if (!el) {
       el = document.createElement('p');
       el.className = 'support-error';
@@ -183,6 +183,10 @@
     el.textContent = text;
     setTimeout(() => el.remove(), 6000);
   }
+
+  // Words the topic buttons put in the message box: on their own they are not a message yet.
+  const STARTERS = ['I have a question about', 'Can you ship to', 'About my order:'];
+  const onlyStarter = (text) => STARTERS.some((s) => text.replace(/\s+$/, '') === s);
 
   // The first message: the name and email from the card above, the message from the box below.
   async function startChat(text) {
@@ -200,6 +204,12 @@
       f.scrollIntoView({ block: 'nearest', behavior: reduced() ? 'auto' : 'smooth' });
     };
     const d = { name: field('name').value.trim(), email: field('email').value.trim(), website: field('website').value, message: text };
+    if (onlyStarter(text)) {
+      const ta = compose.querySelector('textarea');
+      ta.focus({ preventScroll: true });
+      ta.setSelectionRange(ta.value.length, ta.value.length);
+      return note('Please finish your message after “' + text.replace(/\s+$/, '') + '”, then send it.');
+    }
     if (!d.name) return fail('Please add your name, so we know who we’re talking to.', 'name');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.email)) return fail('Please add your email, so we can reply even if you leave.', 'email');
     err.hidden = true;
@@ -245,14 +255,15 @@
       </form>`;
     const f = body.querySelector('.support-details');
     f.querySelectorAll('input').forEach((i) => i.addEventListener('input', () => i.classList.remove('is-bad')));
-    // Enter: name → email → the message (or send it, if it's already written)
+    // Enter moves on: name → email → the message box. It never sends; only the send button
+    // (or Enter in the message box itself) does, so a half-written message can't go by accident.
     f.addEventListener('submit', (e) => e.preventDefault());
     f.addEventListener('keydown', (e) => {
       if (e.key !== 'Enter' || e.isComposing) return;
       e.preventDefault();
       if (e.target.name === 'name') return f.querySelector('input[name=email]').focus({ preventScroll: true });
-      if (ta.value.trim()) compose.requestSubmit();
-      else ta.focus({ preventScroll: true });
+      ta.focus({ preventScroll: true });
+      ta.setSelectionRange(ta.value.length, ta.value.length);
     });
     body.querySelectorAll('[data-topic]').forEach((b) => b.addEventListener('click', () => {
       body.querySelectorAll('[data-topic]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
@@ -273,13 +284,18 @@
     body.innerHTML = `
       <div class="support-intro">
         <p><strong>Welcome back${form.name ? ', ' + esc(form.name.split(' ')[0]) : ''}.</strong> We found your earlier conversation (${esc(info.number)}).</p>
-        <p>To keep it private, we’ve emailed a 6-digit code to <strong>${esc(info.hint)}</strong>. Enter it to carry on where you left off. Your new message will be added.</p>
+        <p>To keep it private, we’ve emailed a 6-digit code to <strong>${esc(info.hint)}</strong>. Enter it to carry on where you left off.</p>
         ${info.note ? `<p>${esc(info.note)}</p>` : ''}
       </div>
+      ${form.message ? `<div class="support-pending">
+        <span>Sent as soon as the code is checked</span>
+        <p>${esc(form.message)}</p>
+        <button type="button" class="support-link" data-act="edit">Change my message</button>
+      </div>` : ''}
       <form class="support-start support-card support-code" novalidate>
         <label>Code from the email <input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required /></label>
         <p class="support-error" role="alert" hidden></p>
-        <button type="submit" class="support-submit"><span>Continue my conversation</span>${ICON.arrow}</button>
+        <button type="submit" class="support-submit"><span>${form.message ? 'Check the code and send' : 'Continue my conversation'}</span>${ICON.arrow}</button>
         <p class="support-fine">
           <button type="button" class="support-link" data-act="resend">Send a new code</button> ·
           <button type="button" class="support-link" data-act="new">Start a new conversation instead</button>
@@ -302,6 +318,19 @@
       store.set(KEY, token);
       renderThread(out);
       updateLauncher();
+    });
+    const edit = body.querySelector('[data-act=edit]');
+    if (edit) edit.addEventListener('click', () => {
+      // back to the start, everything filled in as they left it; sending again updates the waiting message
+      renderStart();
+      const card = body.querySelector('.support-details');
+      card.querySelector('[name=name]').value = form.name || '';
+      card.querySelector('[name=email]').value = form.email || '';
+      const ta = compose.querySelector('textarea');
+      ta.value = form.message || '';
+      ta.dispatchEvent(new Event('input'));
+      ta.focus({ preventScroll: true });
+      ta.setSelectionRange(ta.value.length, ta.value.length);
     });
     f.querySelector('[data-act=resend]').addEventListener('click', async () => {
       const out = await api('/api/support/resend', { handle: info.handle });

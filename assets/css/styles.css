@@ -1394,6 +1394,12 @@ a.contact-card:hover { border-color: var(--ink); }
 .support-intro p { font-size: var(--text-sm); color: var(--sg-muted); line-height: 1.6; }
 .support-intro strong { color: var(--sg-text); font-weight: 500; }
 .support-intro p + p { margin-top: 0.5rem; }
+/* Code screen: the message that goes out once the code is right */
+.support-pending { display: grid; justify-items: start; gap: 0.375rem; padding: 0.75rem 0.875rem; border-radius: 16px;
+  background: var(--sg-fill); box-shadow: inset 0 0 0 1px var(--sg-line); }
+.support-pending span { font-size: var(--text-2xs); letter-spacing: 0.04em; color: var(--sg-subtle); }
+.support-pending p { font-size: var(--text-sm); line-height: 1.55; color: var(--sg-text); white-space: pre-wrap; overflow-wrap: anywhere; }
+.support-pending .support-link { font-size: var(--text-xs); }
 
 /* Waiting note and reference */
 .support-wait { display: flex; gap: 0.5rem; align-items: flex-start; padding: 0.625rem 0.875rem; border-radius: 16px;
