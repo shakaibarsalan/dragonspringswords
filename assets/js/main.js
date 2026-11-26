@@ -1545,6 +1545,14 @@
     const slides = $$('.hero-slide', media);
     const bars = $$('.hero-bar', ui);
     const caption = $('#hero-caption');
+    // Phones: the hero ends exactly at the bottom of the screen, under the delivery bar above it (styles.css)
+    const hero = $('#hero');
+    const fit = () => document.documentElement.style.setProperty('--above-hero',
+      Math.max(0, Math.round(hero.getBoundingClientRect().top + window.scrollY)) + 'px');
+    fit();
+    window.addEventListener('resize', fit);
+    const bar = $('.announcement');
+    if (bar && 'ResizeObserver' in window) new ResizeObserver(fit).observe(bar);
     if (slides.length < 2) return;
     const MS = 6500;
     ui.style.setProperty('--slide-ms', MS + 'ms');
@@ -1570,7 +1578,8 @@
 
     function play() {
       clearTimeout(timer);
-      const on = motionSafe && visible && !document.hidden;
+      // also with animations off (phones in battery saver): then the pictures simply fade, without the zoom
+      const on = visible && !document.hidden;
       ui.classList.toggle('is-playing', on);
       if (on) timer = setTimeout(() => show(cur + 1), MS);
     }

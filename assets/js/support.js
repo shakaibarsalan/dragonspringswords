@@ -136,6 +136,8 @@
       fd.append('file', file);
       fd.append('caption', ta.value.trim());
       note('Sending ' + file.name + '…', true);
+      stick = true;
+      toLatest();
       try {
         const res = await fetch('/api/support/upload', { method: 'POST', body: fd });
         const out = await res.json().catch(() => ({}));
@@ -151,6 +153,8 @@
       const text = ta.value.trim();
       if (!text) return;
       if (!token) return startChat(text);
+      stick = true; // sending takes you down to the newest message, even if you'd scrolled up to read
+      toLatest();
       const kept = document.activeElement === ta;
       ta.value = '';
       ta.style.height = '';

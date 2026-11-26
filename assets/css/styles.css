@@ -46,7 +46,7 @@
   --surface-sunken: #f4f1ea;
   --content: #111214;
   --content-muted: #5b5447;
-  --content-subtle: #978c79;
+  --content-subtle: #766c5c; /* was #978c79: about 3.2:1 on cream, too faint on phones; now about 5:1 */
   --border-subtle: #e9e4d9;
   --border: #d9d2c3;
   --accent: #a8592e;
@@ -586,12 +586,7 @@ address { font-style: normal; }
 .rail:focus-visible { outline: 2px solid var(--accent); outline-offset: 6px; }
 @media (min-width: 600px) { .rail { grid-auto-columns: calc((100% - 2 * 1rem) / 2.6); gap: 1rem; } }
 @media (min-width: 1024px) { .rail { grid-auto-columns: calc((100% - 3 * 1.25rem) / 4.3); gap: 1.25rem; } }
-.rail-wrap::before, .rail-wrap::after { content: ""; position: absolute; top: 0; bottom: 0; z-index: 2; width: 2.5rem; pointer-events: none;
-  opacity: 0; transition: opacity 0.3s ease; }
-.rail-wrap::before { left: 0; background: linear-gradient(to right, var(--paper), rgb(250 248 244 / 0)); }
-.rail-wrap::after { right: 0; background: linear-gradient(to left, var(--paper), rgb(250 248 244 / 0)); }
-@media (min-width: 768px) { .rail-wrap::before, .rail-wrap::after { width: 4.5rem; } }
-.rail-wrap.can-left::before, .rail-wrap.can-right::after { opacity: 1; }
+/* no fades over the row's edges: they covered the photos and the words; the arrows and the peek of the next card show it scrolls */
 .section-heading > div { max-width: 42rem; }
 .section-heading h2 { margin-top: 0.75rem; display: block; }
 .section-heading .lede { margin-top: 1.25rem; color: var(--content-muted); }
@@ -626,7 +621,7 @@ address { font-style: normal; }
   position: absolute;
   inset: 0;
   /* darker at the bottom so the name and count stay readable on light photos (grass, white backdrops) */
-  background: linear-gradient(to top, rgb(17 18 20 / 0.82) 0%, rgb(17 18 20 / 0.45) 22%, rgb(17 18 20 / 0.08) 45%, transparent 60%);
+  background: linear-gradient(to top, rgb(17 18 20 / 0.9) 0%, rgb(17 18 20 / 0.66) 26%, rgb(17 18 20 / 0.2) 50%, transparent 66%);
 }
 .category-label {
   position: absolute;
@@ -642,7 +637,8 @@ address { font-style: normal; }
 }
 .category-label h3 { font-family: var(--font-display); font-size: 1.875rem; line-height: 1.1; }
 @media (min-width: 768px) { .category-label h3 { font-size: 2.25rem; } }
-.category-label p { margin-top: 0.25rem; font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.14em; color: rgb(250 248 244 / 0.6); }
+.category-label p { margin-top: 0.25rem; font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.14em; color: rgb(250 248 244 / 0.85); }
+.category-label h3 { text-shadow: 0 1px 18px rgb(0 0 0 / 0.45); }
 .round-arrow {
   display: grid;
   width: 2.5rem;
@@ -733,7 +729,7 @@ address { font-style: normal; }
   padding-top: 1.5rem;
 }
 .story-facts dt { font-family: var(--font-display); font-size: 1.75rem; line-height: 1.1; }
-.story-facts dd { margin: 0.25rem 0 0; font-size: var(--text-xs); color: var(--content-subtle); }
+.story-facts dd { margin: 0.25rem 0 0; font-size: var(--text-xs); color: var(--content-muted); }
 
 /* The Forge (Nehta lookbook teaser) */
 .forge { position: relative; background: var(--ink); color: var(--paper); }
@@ -905,6 +901,7 @@ address { font-style: normal; }
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+  .hero-slide { transition-duration: 1.2s !important; } /* a fade only: the pictures still change */
 }
 
 /* The ImageMask inner wrapper always fills its frame (also with motion off). */
@@ -1719,11 +1716,12 @@ a.contact-card:hover { border-color: var(--ink); }
 .lookbook-card-frame { position: relative; aspect-ratio: 4 / 5; overflow: hidden; background: var(--sand-900); }
 .lookbook-card-frame img { width: 100%; height: 100%; object-fit: cover; opacity: 0.85; transition: transform 1.2s var(--ease-editorial), opacity 1.2s var(--ease-editorial); }
 .lookbook-card:hover .lookbook-card-frame img { transform: scale(1.03); opacity: 1; }
-.lookbook-card-scrim { position: absolute; inset: 0; background: linear-gradient(to top, rgb(17 18 20 / 0.8), transparent 55%); }
+.lookbook-card-scrim { position: absolute; inset: 0; background: linear-gradient(to top, rgb(17 18 20 / 0.92) 0%, rgb(17 18 20 / 0.62) 30%, transparent 62%); }
+.lookbook-card-title { text-shadow: 0 1px 18px rgb(0 0 0 / 0.45); }
 .lookbook-card-copy { position: absolute; inset: auto 0 0; display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; padding: 1.75rem; }
-.lookbook-card-season { font-size: var(--text-2xs); letter-spacing: 0.16em; text-transform: uppercase; color: rgb(250 248 244 / 0.55); }
+.lookbook-card-season { font-size: var(--text-2xs); letter-spacing: 0.16em; text-transform: uppercase; color: rgb(250 248 244 / 0.8); }
 .lookbook-card-title { margin-top: 0.5rem; font-family: var(--font-display); font-size: clamp(2.25rem, 4vw, 3rem); line-height: 1; }
-.lookbook-card-count { margin-top: 0.5rem; font-size: var(--text-xs); color: rgb(250 248 244 / 0.45); }
+.lookbook-card-count { margin-top: 0.5rem; font-size: var(--text-xs); color: rgb(250 248 244 / 0.72); }
 .lookbook-card-arrow { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; flex-shrink: 0; border-radius: 999px; border: 1px solid rgb(250 248 244 / 0.3); transition: background-color var(--duration-base), color var(--duration-base), border-color var(--duration-base); }
 .lookbook-card:hover .lookbook-card-arrow { border-color: var(--paper); background: var(--paper); color: var(--ink); }
 
@@ -1839,7 +1837,7 @@ a.contact-card:hover { border-color: var(--ink); }
 /* light header: deep bronze-gold, at least 3.3:1 against the header in every band (the bright gold is for dark backgrounds) */
 .wordmark { --gold: linear-gradient(100deg, #5a3f10 0%, #7a5718 24%, #94702a 40%, #6d4d14 56%, #86622a 72%, #573c0e 100%);
   --gold-sub: linear-gradient(100deg, #4e360c 0%, #6a4b14 50%, #4e360c 100%); }
-.site-header.is-transparent .wordmark, .mobile-menu .wordmark, [data-surface="inverse"] .wordmark {
+.site-header.is-transparent .wordmark, [data-surface="inverse"] .wordmark {
   --gold: linear-gradient(100deg, #b8862e 0%, #f3d38a 24%, #fff1c7 38%, #d6a748 52%, #f7e2a6 68%, #b07f2a 100%);
   --gold-sub: var(--gold);
 }
@@ -1925,3 +1923,37 @@ html.has-intro talkfront-widget, html.has-intro .support, html.has-intro .suppor
 .offer-timeline time { margin-left: auto; font-size: var(--text-xs); color: var(--content-subtle); }
 .offer-link { background: none; border: 0; padding: 0; color: var(--content-subtle); text-decoration: underline; cursor: pointer; font-size: var(--text-sm); }
 .co-deal { color: var(--accent); font-weight: 500; }
+
+/* =============================================================================
+   PHONES: words never sit on a busy photo. The hero (and a lookbook's cover) shows its picture in the top part of
+   the screen, fading into black, and the title, text and buttons sit on that black below it.
+   ========================================================================== */
+@media (max-width: 767px) {
+  .hero { min-height: calc(100svh - var(--above-hero, 0px)); }
+  .hero-media { height: 60svh; -webkit-mask-image: linear-gradient(to bottom, #000 50%, transparent 97%); mask-image: linear-gradient(to bottom, #000 50%, transparent 97%); }
+  .hero::before {
+    background:
+      linear-gradient(to bottom, rgb(17 18 20 / 0.5), transparent 22%),
+      linear-gradient(to top, var(--ink) 0%, var(--ink) 40%, rgb(17 18 20 / 0) 62%);
+  }
+  .hero-copy { padding-top: 42svh; padding-bottom: 5.5rem; } /* clear of the chat button in the corner */
+  /* the picture bars sit at the top of the photo, like stories */
+  .hero-slides-ui { top: calc(var(--header-h) + 0.625rem); bottom: auto; }
+  .hero-bar::before { background: rgb(250 248 244 / 0.5); box-shadow: 0 0 6px rgb(0 0 0 / 0.45); }
+  .hero-caption { color: rgb(250 248 244 / 0.85); text-shadow: 0 1px 8px rgb(0 0 0 / 0.7); }
+  .hero .eyebrow { color: rgb(250 248 244 / 0.82); }
+  .hero h1 { margin-top: 1rem; text-shadow: 0 2px 24px rgb(0 0 0 / 0.55); }
+  .hero-body { margin-top: 1.25rem; font-size: 1rem; color: rgb(250 248 244 / 0.88); }
+  .hero-actions { margin-top: 1.75rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.625rem; } /* side by side: the whole hero fits one screen */
+  .hero-actions .btn { min-width: 0; padding-inline: 0.5rem; letter-spacing: 0.1em; }
+
+  .lookbook-cover-img { inset: 0 0 auto 0; height: 62svh; -webkit-mask-image: linear-gradient(to bottom, #000 50%, transparent 97%); mask-image: linear-gradient(to bottom, #000 50%, transparent 97%); }
+  .lookbook-cover-scrim { background: linear-gradient(to bottom, rgb(17 18 20 / 0.5), transparent 24%); }
+  .lookbook-cover-copy { padding-top: 46svh; padding-bottom: 3rem; }
+  .lookbook-title { text-shadow: 0 2px 24px rgb(0 0 0 / 0.55); }
+  .lookbook-intro { font-size: 1rem; color: rgb(250 248 244 / 0.88); }
+
+  .category-frame { aspect-ratio: 1 / 1; }
+  .story-facts dt { font-size: 1.375rem; }
+}
+@media (max-width: 359px) { .hero-actions { grid-template-columns: 1fr; } }
