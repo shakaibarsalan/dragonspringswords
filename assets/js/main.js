@@ -250,7 +250,7 @@
           <div class="footer-grid">
             <div class="footer-brand">
               <div class="footer-lockup"><img class="footer-emblem" src="/assets/img/brand/logo-emblem.webp" alt="" width="120" height="220" loading="lazy" decoding="async" /><p class="footer-wordmark">Dragon Spring<span>Swords</span></p></div>
-              <p class="tagline">Katanas, swords and fine cutlery. Forged slowly, sharpened by hand.</p>
+              <p class="tagline">Katanas, swords and fine cutlery. Forged slowly, finished by hand.</p>
               <address>${contactLines}</address>
             </div>
             <div class="footer-col">
@@ -760,7 +760,7 @@
       title.textContent = cat ? cat.name : 'All pieces';
       lede.textContent = cat
         ? cat.intro || `Every piece in ${cat.name.toLowerCase()} we have in the vault right now.`
-        : 'Katanas, swords, knives and axes. Every piece finished and sharpened by hand.';
+        : 'Katanas, swords, knives and axes. Every piece finished by hand.';
       // The server already wrote this page's title and description; change them only on later filters.
       if (!(SSR && first)) setMeta(`${cat ? cat.name : 'Shop'} | Dragon Spring Swords`, lede.textContent);
       first = false;
@@ -947,7 +947,7 @@
               ${inStock && S.offers_enabled === '1' && !vs.length ? '<button type="button" class="btn btn-outline-dark btn-block offer-open" data-offer-open>Make an offer</button>' : ''}
               ${S.order_note ? `<p class="order-note">${esc(S.order_note)}</p>` : ''}
               <ul class="order-points">
-                <li>${icon('flame')} Sharpened and checked by hand</li>
+                <li>${icon('flame')} ${['katanas', 'swords'].includes(p.categorySlug) ? 'Unsharpened edge, made for display' : 'Sharpened and checked by hand'}</li>
                 <li>${icon('truck')} Insured, tracked delivery</li>
                 <li>${icon('shield')} Sold only to buyers 18+</li>
               </ul>
