@@ -862,17 +862,24 @@
               </div>
               <p class="currency-note" hidden>Converted from US dollars at today’s rate. The final amount is confirmed when you order.</p>
             </div>
-            ${vs.length ? `<div class="option-row reveal is-mount" style="--delay:0.3s;--distance:12px">
-              <label class="option-label" for="product-option">Choose</label>
-              <div class="option-select-wrap"><select id="product-option" class="option-select" data-option-select>${vs
+            ${vs.length ? `<fieldset class="option-row reveal is-mount" style="--delay:0.3s;--distance:12px">
+              <legend class="option-label">Choose</legend>
+              ${vs
                 .map((v, i) => {
-                  const open = v.group && (i === 0 || vs[i - 1].group !== v.group);
-                  const close = i > 0 && vs[i - 1].group && vs[i - 1].group !== v.group;
-                  return `${close ? '</optgroup>' : ''}${open ? `<optgroup label="${esc(v.group)}">` : ''}<option value="${i}" data-price="${Number(v.price)}" data-base="${v.basePrice ? Number(v.basePrice) : ''}"${v.image ? ` data-image="${esc(v.image)}" data-thumb="${esc(v.thumb || v.image)}"` : ''}>${esc(v.label)}</option>`;
+                  const start = i === 0 || vs[i - 1].group !== v.group;
+                  const card = `<label class="option-card${i === 0 ? ' is-on' : ''}">
+                    <input type="radio" name="product-option" value="${i}" data-option-radio${i === 0 ? ' checked' : ''} />
+                    ${v.thumb || v.image ? `<img src="${esc(v.thumb || v.image)}" alt="" loading="lazy" width="44" height="44" />` : ''}
+                    <span class="option-card-text"><span class="option-card-name">${esc(v.label)}</span><span class="option-card-price" data-numeric>${priceSpan(v.price)}${v.basePrice && Number(v.basePrice) > Number(v.price) ? ` <s data-usd="${Number(v.basePrice)}">${formatPrice(v.basePrice)}</s>` : ''}</span></span>
+                  </label>`;
+                  return `${start && i > 0 ? '</div>' : ''}${start && v.group ? `<p class="option-group">${esc(v.group)}</p>` : ''}${start ? '<div class="option-grid">' : ''}${card}`;
                 })
-                .join('')}${vs.length && vs[vs.length - 1].group ? '</optgroup>' : ''}</select></div>
-              <p class="option-note" data-option-note${vs[0] && vs[0].note ? '' : ' hidden'}>${esc((vs[0] && vs[0].note) || '')}</p>
-            </div>` : ''}
+                .join('')}</div>
+              <div class="option-summary" aria-live="polite">
+                <p class="option-chosen">Your choice: <strong data-option-chosen>${esc(vs[0].label)}</strong> · <span data-option-chosen-price data-numeric>${priceSpan(vs[0].price)}</span></p>
+                <p class="option-note" data-option-note${vs[0] && vs[0].note ? '' : ' hidden'}>${esc((vs[0] && vs[0].note) || '')}</p>
+              </div>
+            </fieldset>` : ''}
             ${p.finishes && p.finishes.length > 1 ? `<div class="finish-row reveal is-mount" style="--delay:0.32s"><span>Finishes</span><div class="swatches swatches-lg">${p.finishes.map((h) => `<span style="background:${esc(h)}"></span>`).join('')}</div></div>` : ''}
 
             <div class="order-box reveal is-mount" style="--delay:0.36s;--distance:14px">
@@ -933,9 +940,11 @@
 
     // Order links carry the piece, the chosen option, the price the visitor sees, and the page.
     const inStock = p && p.inStock !== false;
-    const picker = $('[data-option-select]', root);
+    // the option cards (radios underneath): which one is chosen
+    const radios = $$('[data-option-radio]', root);
     const options = p && Array.isArray(p.variants) ? p.variants : [];
-    const chosen = () => (picker && options[Number(picker.value)]) || null;
+    let current = Math.max(0, radios.findIndex((r) => r.checked));
+    const chosen = () => (radios.length && options[current]) || null;
     // An option with its own photo shows it as the first photo; others bring back the product's own.
     const firstSlide = $('#gallery-main .gallery-slide img', root);
     const firstThumb = $('.gallery-rail button img', root);
@@ -967,6 +976,10 @@
         note.textContent = v.note || '';
         note.hidden = !v.note;
       }
+      const chosenName = $('[data-option-chosen]', root);
+      const chosenPrice = $('[data-option-chosen-price]', root);
+      if (chosenName) chosenName.textContent = v.label;
+      if (chosenPrice) chosenPrice.innerHTML = priceSpan(v.price);
       const now = $('[data-price-now]', root);
       const was = $('[data-price-was]', root);
       const off = v.basePrice ? discountPercent(v.basePrice, v.price) : 0;
@@ -978,7 +991,7 @@
       const box = now && now.closest('.product-price-lg');
       if (box) box.classList.toggle('is-sale', off > 0);
       const buy = $('[data-buy]', root);
-      if (buy) buy.href = `/checkout?p=${encodeURIComponent(p.slug)}&v=${Number(picker.value)}`;
+      if (buy) buy.href = `/checkout?p=${encodeURIComponent(p.slug)}&v=${current}`;
       updateOrderLinks();
     }
     function updateOrderLinks() {
@@ -992,7 +1005,12 @@
       if (wa) wa.href = `https://wa.me/${S.whatsapp}?text=${encodeURIComponent(msg)}`;
       if (mail) mail.href = `mailto:${S.email}?subject=${encodeURIComponent((inStock ? 'Order: ' : 'Availability: ') + p.name)}&body=${encodeURIComponent(msg + '\n\nMy name:\nCountry for delivery:\n')}`;
     }
-    if (picker) picker.addEventListener('change', showOption);
+    radios.forEach((r) => r.addEventListener('change', () => {
+      if (!r.checked) return;
+      current = Number(r.value);
+      radios.forEach((x) => x.closest('.option-card').classList.toggle('is-on', x === r));
+      showOption();
+    }));
     updateOrderLinks();
     document.addEventListener('currencychange', updateOrderLinks);
     initOffer(p);
