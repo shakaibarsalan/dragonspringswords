@@ -67,6 +67,9 @@
     config().then((cfg) => {
       if (!cfg.open) return;
       buy.forEach((b) => (b.hidden = false));
+      // the checkout replaces "Email to order" for a piece in stock (Buy now is only there when it is)
+      const mail = document.getElementById('order-mail');
+      if (mail) mail.remove();
       const wa = document.getElementById('order-wa');
       if (wa) wa.classList.replace('btn-dark', 'btn-outline-dark');
     });
