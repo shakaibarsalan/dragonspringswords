@@ -1466,6 +1466,14 @@ a.contact-card:hover { border-color: var(--ink); }
 .sl-go { display: grid; place-items: center; flex: none; width: 2.75rem; height: 2.75rem; border-radius: 50%; background: var(--ink); color: var(--paper);
   transition: transform 320ms var(--ease-entrance), background-color var(--duration-quick); }
 .support-launcher:hover .sl-go { transform: translateY(-1px) scale(1.04); background: var(--sand-800); }
+/* The open pill reads like a message box, so its button is a send arrow; folded (and on phones) the button
+   is a chat bubble, so nobody mistakes it for "back to top". The two icons swap with a small turn. */
+.sl-go { position: relative; }
+.sl-ico { position: absolute; inset: 0; display: grid; place-items: center;
+  transition: opacity 240ms ease, transform 460ms var(--ease-entrance); }
+.sl-ico-chat { opacity: 0; transform: scale(0.6) rotate(-14deg); }
+.support-launcher.is-compact:not(:hover):not(:focus-visible) .sl-ico-send { opacity: 0; transform: scale(0.6) translateY(6px); }
+.support-launcher.is-compact:not(:hover):not(:focus-visible) .sl-ico-chat { opacity: 1; transform: none; }
 /* While the page scrolls the launcher folds to its round button; hover (or keyboard focus) opens it out
    again, and it is full size back at the top of the page (support.js sets .is-compact). */
 .support-launcher.is-compact:not(:hover):not(:focus-visible) { gap: 0; padding-left: 0.375rem; }
@@ -1485,6 +1493,8 @@ a.contact-card:hover { border-color: var(--ink); }
   .sl-short { display: inline-block; }
   .sl-go { width: 2.5rem; height: 2.5rem; }
   .support-launcher.is-compact:not(:hover):not(:focus-visible) { padding-left: 0.3125rem; }
+  .support-launcher .sl-ico-send { opacity: 0; }
+  .support-launcher .sl-ico-chat { opacity: 1; transform: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .support, .support-panel, .support-compose, .support-msg.is-new, .support-topics button, .support-details, .support-wait,

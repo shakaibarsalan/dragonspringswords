@@ -58,6 +58,8 @@
     send: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>',
     arrow: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
     chat: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>',
+    // speech bubble with "typing" dots: what people recognise as a chat button
+    bubble: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M12 4c-4.7 0-8.5 3.1-8.5 7 0 2 1 3.8 2.6 5.1L5.4 20l4.3-1.8c.7.2 1.5.3 2.3.3 4.7 0 8.5-3.1 8.5-7s-3.8-7-8.5-7z"/><circle cx="8.5" cy="11" r="1.05" fill="currentColor" stroke="none"/><circle cx="12" cy="11" r="1.05" fill="currentColor" stroke="none"/><circle cx="15.5" cy="11" r="1.05" fill="currentColor" stroke="none"/></svg>',
     clip: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5l-8.6 8.6a5 5 0 0 1-7.1-7.1l8.6-8.6a3.3 3.3 0 0 1 4.7 4.7l-8.6 8.6a1.7 1.7 0 0 1-2.4-2.4l7.9-7.9"/></svg>',
     doc: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8l-5-5z"/><path d="M14 3v5h5"/></svg>',
     clock: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
@@ -439,8 +441,8 @@
     launcher.classList.toggle('has-thread', !!token);
     launcher.setAttribute('aria-label', token ? 'Open your conversation with us' : 'Chat with us');
     launcher.innerHTML = token
-      ? `<span class="sl-long">Your conversation</span><span class="sl-short">Your chat</span><span class="support-dot" hidden></span><span class="sl-go">${ICON.chat}</span>`
-      : `<span class="sl-long">Ask about a blade, shipping or an order</span><span class="sl-short">Chat with us</span><span class="sl-go">${ICON.send}</span>`;
+      ? `<span class="sl-long">Your conversation</span><span class="sl-short">Your chat</span><span class="support-dot" hidden></span><span class="sl-go">${ICON.bubble}</span>`
+      : `<span class="sl-long">Ask about a blade, shipping or an order</span><span class="sl-short">Chat with us</span><span class="sl-go"><span class="sl-ico sl-ico-send">${ICON.send}</span><span class="sl-ico sl-ico-chat">${ICON.bubble}</span></span>`;
     launcher.hidden = false;
     fold();
     checkUnread();
