@@ -56,6 +56,8 @@
     send: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>',
     arrow: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
     chat: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>',
+    clip: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5l-8.6 8.6a5 5 0 0 1-7.1-7.1l8.6-8.6a3.3 3.3 0 0 1 4.7 4.7l-8.6 8.6a1.7 1.7 0 0 1-2.4-2.4l7.9-7.9"/></svg>',
+    doc: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8l-5-5z"/><path d="M14 3v5h5"/></svg>',
     clock: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
   };
   // Phones: no automatic focus, so the keyboard doesn't cover the panel the moment it opens.
@@ -91,6 +93,7 @@
       </div>
       <div class="support-body" aria-live="polite"></div>
       <form class="support-compose" hidden>
+        <label class="support-attach" title="Send a photo or file">${ICON.clip}<span class="sr-only">Send a photo or file</span><input type="file" accept="image/*,.heic,.heif,.pdf,.doc,.docx,.xls,.xlsx,.odt,.ods,.rtf,.txt,.csv" hidden /></label>
         <label class="sr-only" for="support-text">Message</label>
         <textarea id="support-text" rows="1" maxlength="2000" placeholder="Write a message" required></textarea>
         <button type="submit" class="support-send" aria-label="Send">${ICON.send}</button>
@@ -102,15 +105,44 @@
     panel.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
     const ta = compose.querySelector('textarea');
     autoGrow(ta);
+    const sendBtn = compose.querySelector('.support-send');
+    ['mousedown', 'pointerdown', 'touchstart'].forEach((ev) =>
+      sendBtn.addEventListener(ev, (e) => { if (document.activeElement === ta) e.preventDefault(); }, { passive: false }));
+    sendBtn.addEventListener('touchend', (e) => {
+      // touchstart's preventDefault also stops the click, so send from here on touch screens
+      if (document.activeElement === ta) { e.preventDefault(); compose.requestSubmit(); }
+    });
     ta.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); compose.requestSubmit(); }
+    });
+    const fileInput = compose.querySelector('.support-attach input');
+    fileInput.addEventListener('change', async () => {
+      const file = fileInput.files && fileInput.files[0];
+      if (!file || !token) return;
+      if (file.size > 10 * 1024 * 1024) { fileInput.value = ''; return note('That file is over 10 MB. Please send a smaller one.'); }
+      const fd = new FormData();
+      fd.append('token', token);
+      fd.append('file', file);
+      fd.append('caption', ta.value.trim());
+      note('Sending ' + file.name + '…', true);
+      try {
+        const res = await fetch('/api/support/upload', { method: 'POST', body: fd });
+        const out = await res.json().catch(() => ({}));
+        if (!res.ok || !out.ok) note(out.error || 'Couldn’t send that file. Please try again.');
+        else { ta.value = ''; ta.style.height = ''; note(''); refresh(); }
+      } catch (_) {
+        note('No connection. The file wasn’t sent.');
+      }
+      fileInput.value = '';
     });
     compose.addEventListener('submit', async (e) => {
       e.preventDefault();
       const text = ta.value.trim();
       if (!text) return;
+      const kept = document.activeElement === ta;
       ta.value = '';
       ta.style.height = '';
+      if (kept) ta.focus({ preventScroll: true }); // keyboard stays up for the next message
       const out = await api('/api/support/message', { token, message: text });
       if (out && out.ok) refresh();
       else {
@@ -193,7 +225,7 @@
       const label = btn.querySelector('span');
       btn.disabled = true;
       label.textContent = 'Starting…';
-      const out = await api('/api/support/start', { ...d, page: location.href });
+      const out = await api('/api/support/start', { ...d, page: location.href, device: store.get(KEY) || '' });
       btn.disabled = false;
       label.textContent = 'Start chat';
       if (!out || !out.ok) return fail((out && out.error) || 'Couldn’t reach us just now. Please try again.');
@@ -276,7 +308,10 @@
         <div class="support-msg is-${esc(m.from)}${last ? ' is-last' : ''}">
           ${m.from === 'team' ? (last ? avatar('support-msg-avatar') : '<span class="support-msg-avatar" aria-hidden="true"></span>') : ''}
           <div class="support-msg-col">
-            <div class="support-bubble">${esc(m.text)}</div>
+            ${m.file ? (m.file.kind === 'image'
+              ? `<a class="support-photo" href="${esc(m.file.url)}?token=${encodeURIComponent(token)}" target="_blank" rel="noopener"><img src="${esc(m.file.url)}?token=${encodeURIComponent(token)}" alt="${esc(m.file.name)}" loading="lazy" /></a>`
+              : `<a class="support-file" href="${esc(m.file.url)}?token=${encodeURIComponent(token)}">${ICON.doc}<span><strong>${esc(m.file.name)}</strong><small>${esc(m.file.size)} · download</small></span></a>`) : ''}
+            ${m.text ? `<div class="support-bubble">${esc(m.text)}</div>` : ''}
             ${last ? `<p class="support-meta">${who}${m.via === 'email' ? ' · by email' : ''} · ${fmt(m.at)}</p>` : ''}
           </div>
         </div>`;

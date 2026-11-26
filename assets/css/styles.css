@@ -1655,3 +1655,14 @@ a.contact-card:hover { border-color: var(--ink); }
 html.has-intro, html.has-intro body { overflow: hidden; }
 /* the chat buttons wait until the intro has finished */
 html.has-intro talkfront-widget, html.has-intro .support { visibility: hidden !important; }
+
+/* Chat: photos and files (both ways) */
+.support-attach { display: grid; place-items: center; flex: none; width: 2.5rem; height: 2.625rem; border-radius: 50%; color: var(--content-muted); cursor: pointer; }
+.support-attach:hover { color: var(--content); background: var(--sand-100, #f4f1ea); }
+.support-photo { display: block; margin-bottom: 0.25rem; max-width: 14rem; border-radius: 14px; overflow: hidden; border: 1px solid var(--border-subtle); background: var(--sand-100, #f4f1ea); }
+.support-photo img { display: block; width: 100%; height: auto; max-height: 16rem; object-fit: cover; }
+.support-file { display: flex; align-items: center; gap: 0.625rem; margin-bottom: 0.25rem; max-width: 15rem; padding: 0.625rem 0.75rem; border: 1px solid var(--border-subtle); border-radius: 14px; background: #fff; text-decoration: none; color: var(--content); }
+.support-file span { display: grid; min-width: 0; }
+.support-file strong { font-weight: 500; font-size: 0.875rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.support-file small { font-size: 0.6875rem; color: var(--content-subtle); }
+.support-msg.is-you .support-photo, .support-msg.is-you .support-file { margin-left: auto; }
