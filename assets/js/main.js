@@ -1551,6 +1551,7 @@
     const slug = (p && p.slug) || (location.pathname.match(/\/product\/([a-z0-9-]+)/) || [])[1];
     const name = (p && p.name) || ($('.product-title') || {}).textContent || 'this piece';
     const priceUsd = p ? Number(p.price) : null;
+    const listed = priceUsd ? Math.ceil(priceUsd) : 0; // what the offer box starts with: the price as it is
     let dlg;
     function build() {
       dlg = document.createElement('dialog');
@@ -1564,7 +1565,8 @@
           </div>
           <p class="review-help">Name your price for <strong>${esc(name)}</strong>${priceUsd ? ` (listed at ${formatPrice(priceUsd, 'USD')})` : ''}. We reply by email, usually within a day, and you can accept our price or offer again.</p>
           <label>Your offer in US dollars
-            <span class="offer-input"><span>$</span><input name="amount" inputmode="numeric" autocomplete="off" required placeholder="${priceUsd ? Math.round(priceUsd * 0.85) : ''}" /></span>
+            <span class="offer-input"><span>$</span><input name="amount" inputmode="numeric" autocomplete="off" required value="${listed || ''}" placeholder="Your price" /></span>
+            ${listed ? `<small class="offer-hint">Listed at ${formatPrice(priceUsd, 'USD')}. Change it to the price you’d like to pay.</small>` : ''}
             <small class="offer-conv" aria-live="polite"></small>
           </label>
           <div class="review-grid">
@@ -1591,14 +1593,18 @@
         const v = Number(amount.value);
         conv.textContent = v && currency !== 'USD' ? `About ${formatPrice(v)} in ${currency}` : '';
       });
+      // the listed price is there to be replaced: focusing the box selects it, so typing writes over it
+      amount.addEventListener('focus', () => setTimeout(() => amount.select(), 0));
       $$('[data-close]', dlg).forEach((b) => b.addEventListener('click', () => dlg.close()));
       dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const d = Object.fromEntries(new FormData(form).entries());
         const fail = (m) => { err.textContent = m; err.hidden = false; };
-        if (!Number(d.amount)) return fail('Enter your offer in US dollars.');
-        if (priceUsd && Number(d.amount) >= priceUsd) return fail('That’s the full price, so you can buy it right away.');
+        const fix = (m) => { fail(m); amount.focus(); };
+        if (!Number(d.amount)) return fix('Enter your offer in US dollars.');
+        if (listed && Number(d.amount) === listed) return fix('That’s the listed price. Change it to the price you’d like to pay.');
+        if (priceUsd && Number(d.amount) >= priceUsd) return fix('That’s the full price or more, so you can buy it right away.');
         if (!d.name.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.email.trim())) return fail('Please add your name and email so we can reply.');
         const send = $('button[type=submit]', form);
         send.disabled = true;
@@ -1607,6 +1613,7 @@
           const out = await res.json().catch(() => ({}));
           if (!res.ok || !out.ok) throw new Error(out.error || 'Couldn’t send your offer. Please try again.');
           $('.offer-done', dlg).textContent = out.message;
+          amount.value = '';
           form.hidden = true;
           $('.review-thanks', dlg).hidden = false;
         } catch (ex) {
@@ -1621,7 +1628,11 @@
       $('form', dlg).hidden = false;
       $('.review-thanks', dlg).hidden = true;
       $('.review-error', dlg).hidden = true;
+      const amount = $('form', dlg).elements.amount;
+      if (!amount.value && listed) amount.value = listed; // after a sent offer, start again from the listed price
       dlg.showModal ? dlg.showModal() : dlg.setAttribute('open', '');
+      // with a mouse, go straight to the price (on phones the keyboard would cover the card)
+      if (window.matchMedia('(pointer: fine)').matches) { amount.focus(); amount.select(); }
     });
   }
 

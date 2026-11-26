@@ -1767,7 +1767,7 @@ html.has-intro talkfront-widget, html.has-intro .support, html.has-intro .suppor
 .offer-input span { padding-left: 0.875rem; color: var(--content-subtle); font-size: 1.125rem; }
 .offer-dialog .offer-input input { border: 0 !important; font-size: 1.25rem !important; font-family: var(--font-display) !important; }
 .offer-input:focus-within { border-color: var(--ink); }
-.offer-conv { font-size: var(--text-xs); color: var(--content-subtle); font-weight: 400; letter-spacing: 0; }
+.offer-conv, .offer-hint { font-size: var(--text-xs); color: var(--content-subtle); font-weight: 400; letter-spacing: 0; }
 .offer-opt { font-weight: 400; color: var(--content-subtle); }
 .offer-page { max-width: 40rem; }
 .offer-card { display: flex; gap: 1.125rem; align-items: center; width: 100%; padding: 1rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); background: #fff; }
