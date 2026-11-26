@@ -316,6 +316,11 @@ address { font-style: normal; }
   -webkit-backdrop-filter: none;
   color: var(--paper);
 }
+/* Over the hero photo: a soft dark fade behind the header and a faint shadow under the text, so the links
+   stay readable over bright parts of a photo */
+.site-header.is-transparent::before { content: ""; position: absolute; inset: 0 0 -3rem; z-index: -1; pointer-events: none;
+  background: linear-gradient(to bottom, rgb(8 7 6 / 0.6), rgb(8 7 6 / 0.25) 60%, rgb(8 7 6 / 0)); }
+.site-header.is-transparent .primary-nav a, .site-header.is-transparent .header-actions { text-shadow: 0 1px 10px rgb(0 0 0 / 0.55); }
 .site-header.is-hidden { transform: translateY(-100%); }
 
 .header-row {
@@ -330,14 +335,14 @@ address { font-style: normal; }
 /* Nehta's layout: links on the left, the wordmark optically centred, icons on
    the right. Below 1180px the links move into the menu (button on the left). */
 .primary-nav { display: none; flex: 1; min-width: 0; align-items: center; gap: 1.5rem; }
-.primary-nav a { font-size: var(--text-xs); letter-spacing: 0.12em; text-transform: uppercase; white-space: nowrap; }
+.primary-nav a { font-size: var(--text-sm); font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; }
 .primary-nav a[hidden] { display: none; }
 @media (min-width: 1180px) {
   .primary-nav { display: flex; }
 }
 @media (min-width: 1180px) and (max-width: 1439px) {
   .primary-nav { gap: 1rem; }
-  .primary-nav a { font-size: var(--text-2xs); letter-spacing: 0.1em; }
+  .primary-nav a { font-size: var(--text-xs); letter-spacing: 0.08em; }
 }
 
 .menu-toggle { margin-left: -0.5rem; padding: 0.5rem; display: inline-flex; flex: 1; justify-content: flex-start; }
@@ -901,6 +906,7 @@ address { font-style: normal; }
   border-radius: var(--radius-sm);
   color: inherit;
   font-size: var(--text-xs);
+  font-weight: 500;
   letter-spacing: 0.1em;
   padding: 0.375rem 1.25rem 0.375rem 0.5rem;
   cursor: pointer;
