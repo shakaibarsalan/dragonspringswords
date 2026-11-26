@@ -373,7 +373,7 @@
             ? `<a class="support-photo" href="${esc(m.file.url)}?token=${encodeURIComponent(token)}" target="_blank" rel="noopener"><img src="${esc(m.file.url)}?token=${encodeURIComponent(token)}" alt="${esc(m.file.name)}" loading="lazy" /></a>`
             : `<a class="support-file" href="${esc(m.file.url)}?token=${encodeURIComponent(token)}">${ICON.doc}<span><strong>${esc(m.file.name)}</strong><small>${esc(m.file.size)} · download</small></span></a>`) : ''}
           ${m.text ? `<div class="support-bubble">${esc(m.text)}</div>` : ''}
-          ${last ? `<p class="support-meta">${m.from === 'you' ? 'You · ' : ''}${m.via === 'email' ? 'by email · ' : ''}${fmt(m.at)}</p>` : ''}
+          ${last ? `<p class="support-meta">${m.from === 'you' ? 'You · ' : ''}${fmt(m.at)}</p>` : ''}
         </div>`;
     }).join('') +
       (msgs.some((m) => m.from === 'team' || m.from === 'assistant') ? '' : `<p class="support-wait">${ICON.clock}<span>Thanks, someone from the team will reply soon. You can close this; we’ll email you too.</span></p>`) +
