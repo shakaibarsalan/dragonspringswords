@@ -78,6 +78,16 @@
 
   const slug = new URLSearchParams(location.search).get('p') || '';
   const product = (C.products || []).find((p) => p.slug === slug);
+  // Pieces sold by option (?v=index): the chosen option sets the price and is named on the order.
+  let variant = -1;
+  if (product && Array.isArray(product.variants) && product.variants.length) {
+    const v = parseInt(new URLSearchParams(location.search).get('v') || '0', 10);
+    variant = Math.min(Math.max(Number.isFinite(v) ? v : 0, 0), product.variants.length - 1);
+    const opt = product.variants[variant];
+    product.price = Number(opt.price);
+    product.name = `${product.name} · ${opt.label}`;
+    product.subtitle = '';
+  }
 
   // Visitor's country (from the currency lookup) → pre-selects the main markets only.
   const ISO_NAME = {
@@ -429,7 +439,7 @@
         const res = await fetch('/api/orders', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...data, product: product.slug, qty, adult: true, agree: true, offer: cfg.offer ? cfg.offer.token : '' }),
+          body: JSON.stringify({ ...data, product: product.slug, variant, qty, adult: true, agree: true, offer: cfg.offer ? cfg.offer.token : '' }),
         });
         const out = await res.json().catch(() => ({}));
         if (!res.ok || !out.ok) {

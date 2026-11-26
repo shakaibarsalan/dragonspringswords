@@ -1209,6 +1209,27 @@ main[id] { min-height: 50vh; }
 .product-price-lg s { font-size: var(--text-sm); color: var(--content-subtle); }
 .product-price-lg .badge { align-self: center; }
 .product-info .currency-note { margin-top: 0; }
+/* Options (a piece sold in several sizes or sets): one dropdown under the price */
+.option-row { display: grid; gap: 0.5rem; }
+.option-label { font-size: var(--text-xs); letter-spacing: 0.1em; text-transform: uppercase; color: var(--content-subtle); }
+.option-select-wrap { position: relative; }
+.option-select { appearance: none; -webkit-appearance: none; width: 100%; min-height: 3rem; padding: 0.75rem 2.75rem 0.75rem 1rem;
+  font: inherit; font-size: 1rem; color: var(--content); background: var(--paper); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); cursor: pointer; }
+.option-select:hover { border-color: var(--content-muted); }
+.option-select:focus-visible { outline: 2px solid var(--content); outline-offset: 2px; }
+.option-select-wrap::after { content: ""; position: absolute; right: 1.1rem; top: 50%; width: 0.5rem; height: 0.5rem;
+  border-right: 1.5px solid var(--content-muted); border-bottom: 1.5px solid var(--content-muted);
+  transform: translateY(-70%) rotate(45deg); pointer-events: none; }
+.price-from { font-size: 0.8em; color: var(--content-muted); }
+.option-note { margin: 0; font-size: 0.875rem; line-height: 1.5; color: var(--content-muted); }
+/* Versions of one piece (e.g. stainless steel / PVD gold): links to each other */
+.version-row { display: grid; gap: 0.5rem; }
+.version-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.version-chip { display: inline-flex; align-items: center; min-height: 2.5rem; padding: 0.5rem 1rem; border: 1px solid var(--border);
+  border-radius: 999px; font-size: 0.875rem; color: var(--content); text-decoration: none; background: var(--paper); }
+a.version-chip:hover { border-color: var(--content-muted); }
+.version-chip.is-current { border-color: var(--content); background: var(--content); color: var(--paper); }
 .finish-row { display: flex; align-items: center; gap: 1rem; font-size: var(--text-xs); letter-spacing: 0.1em; text-transform: uppercase; color: var(--content-subtle); }
 
 /* Order buttons, flat like Nehta's "Add to bag" block */

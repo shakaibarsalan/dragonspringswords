@@ -315,7 +315,7 @@
               ${p.category ? `<p class="cat">${esc(p.category)}</p>` : ''}
             </div>
             <p class="product-price${discount > 0 ? ' is-sale' : ''}" data-numeric>
-              ${priceSpan(p.price)}
+              ${p.variants && p.variants.length ? '<span class="price-from">From</span> ' : ''}${priceSpan(p.price)}
               ${discount > 0 ? `<s data-usd="${Number(p.basePrice)}">${formatPrice(p.basePrice)}</s>` : ''}
             </p>
           </div>
@@ -798,7 +798,9 @@
       setMeta('Piece not found | Dragon Spring Swords');
       return;
     }
-    const discount = p.basePrice ? discountPercent(p.basePrice, p.price) : 0;
+    const vs = Array.isArray(p.variants) ? p.variants : [];
+    const shownP = vs.length ? vs[0] : p;
+    const discount = shownP.basePrice ? discountPercent(shownP.basePrice, shownP.price) : 0;
     const inStock = p.inStock !== false;
     const images = p.images || [];
     const related = products
@@ -854,19 +856,30 @@
               ${p.subtitle ? `<p class="product-sub">${esc(p.subtitle)}</p>` : ''}
               ${myReviews.length ? `<a href="#product-reviews" class="rating-line"><span class="stars-inline" aria-hidden="true">${stars(avg)}</span> ${avg.toFixed(1)} · ${myReviews.length} verified review${myReviews.length === 1 ? '' : 's'}</a>` : ''}
               <div class="product-price-lg${discount > 0 ? ' is-sale' : ''}" data-numeric>
-                ${priceSpan(p.price)}
-                ${discount > 0 ? `<s data-usd="${Number(p.basePrice)}">${formatPrice(p.basePrice)}</s><span class="badge badge-accent">-${discount}%</span>` : ''}
+                <span data-price-now>${priceSpan(shownP.price)}</span>
+                <span data-price-was${discount > 0 ? '' : ' hidden'}>${discount > 0 ? `<s data-usd="${Number(shownP.basePrice)}">${formatPrice(shownP.basePrice)}</s><span class="badge badge-accent">-${discount}%</span>` : ''}</span>
                 ${!inStock ? '<span class="badge badge-dark">Sold out</span>' : p.isNew ? '<span class="badge badge-dark">New</span>' : ''}
               </div>
               <p class="currency-note" hidden>Converted from US dollars at today’s rate. The final amount is confirmed when you order.</p>
             </div>
+            ${vs.length ? `<div class="option-row reveal is-mount" style="--delay:0.3s;--distance:12px">
+              <label class="option-label" for="product-option">Choose</label>
+              <div class="option-select-wrap"><select id="product-option" class="option-select" data-option-select>${vs
+                .map((v, i) => {
+                  const open = v.group && (i === 0 || vs[i - 1].group !== v.group);
+                  const close = i > 0 && vs[i - 1].group && vs[i - 1].group !== v.group;
+                  return `${close ? '</optgroup>' : ''}${open ? `<optgroup label="${esc(v.group)}">` : ''}<option value="${i}" data-price="${Number(v.price)}" data-base="${v.basePrice ? Number(v.basePrice) : ''}"${v.image ? ` data-image="${esc(v.image)}" data-thumb="${esc(v.thumb || v.image)}"` : ''}>${esc(v.label)}</option>`;
+                })
+                .join('')}${vs.length && vs[vs.length - 1].group ? '</optgroup>' : ''}</select></div>
+              <p class="option-note" data-option-note${vs[0] && vs[0].note ? '' : ' hidden'}>${esc((vs[0] && vs[0].note) || '')}</p>
+            </div>` : ''}
             ${p.finishes && p.finishes.length > 1 ? `<div class="finish-row reveal is-mount" style="--delay:0.32s"><span>Finishes</span><div class="swatches swatches-lg">${p.finishes.map((h) => `<span style="background:${esc(h)}"></span>`).join('')}</div></div>` : ''}
 
             <div class="order-box reveal is-mount" style="--delay:0.36s;--distance:14px">
-              ${inStock ? `<a class="btn btn-dark btn-block" href="/checkout?p=${encodeURIComponent(p.slug)}" data-buy hidden>Buy now</a>` : ''}
+              ${inStock ? `<a class="btn btn-dark btn-block" href="/checkout?p=${encodeURIComponent(p.slug)}${vs.length ? '&v=0' : ''}" data-buy hidden>Buy now</a>` : ''}
               ${S.whatsapp ? `<a class="btn btn-dark btn-block" id="order-wa" target="_blank" rel="noopener">${icon('whatsapp')} ${inStock ? 'Order on WhatsApp' : 'Ask about availability'}</a>` : ''}
               ${S.email ? `<a class="btn ${S.whatsapp ? 'btn-outline-dark' : 'btn-dark'} btn-block" id="order-mail">${icon('mail')} ${inStock ? 'Email to order' : 'Email about availability'}</a>` : ''}
-              ${inStock && S.offers_enabled === '1' ? '<button type="button" class="btn btn-outline-dark btn-block offer-open" data-offer-open>Make an offer</button>' : ''}
+              ${inStock && S.offers_enabled === '1' && !vs.length ? '<button type="button" class="btn btn-outline-dark btn-block offer-open" data-offer-open>Make an offer</button>' : ''}
               ${S.order_note ? `<p class="order-note">${esc(S.order_note)}</p>` : ''}
               <ul class="order-points">
                 <li>${icon('flame')} Sharpened and checked by hand</li>
@@ -918,17 +931,68 @@
     wireCards(root);
     if (!$('#gallery-main')) return; // "not found" page
 
-    // Order links carry the piece, the price the visitor sees, and the page.
+    // Order links carry the piece, the chosen option, the price the visitor sees, and the page.
     const inStock = p && p.inStock !== false;
+    const picker = $('[data-option-select]', root);
+    const options = p && Array.isArray(p.variants) ? p.variants : [];
+    const chosen = () => (picker && options[Number(picker.value)]) || null;
+    // An option with its own photo shows it as the first photo; others bring back the product's own.
+    const firstSlide = $('#gallery-main .gallery-slide img', root);
+    const firstThumb = $('.gallery-rail button img', root);
+    const original = firstSlide && {
+      src: firstSlide.getAttribute('src'), srcset: firstSlide.getAttribute('srcset'),
+      w: firstSlide.getAttribute('width'), h: firstSlide.getAttribute('height'),
+      thumb: firstThumb && firstThumb.getAttribute('src'),
+    };
+    function showOptionPhoto(v) {
+      if (!firstSlide || !original) return;
+      const own = v && v.image;
+      const set = (el, k, val) => (val ? el.setAttribute(k, val) : el.removeAttribute(k));
+      firstSlide.setAttribute('src', own ? v.image : original.src);
+      set(firstSlide, 'srcset', own ? (v.thumb && v.thumb !== v.image ? `${v.thumb} 800w, ${v.image} 1600w` : '') : original.srcset);
+      set(firstSlide, 'width', own ? '' : original.w);
+      set(firstSlide, 'height', own ? '' : original.h);
+      if (firstThumb) firstThumb.setAttribute('src', own ? v.thumb || v.image : original.thumb);
+      const firstBtn = $('.gallery-rail button', root);
+      const track = $('#gallery-main', root);
+      if (firstBtn) firstBtn.click();
+      else if (track) track.scrollTo({ left: 0, behavior: 'smooth' });
+    }
+    function showOption() {
+      const v = chosen();
+      if (!v) return;
+      showOptionPhoto(v);
+      const note = $('[data-option-note]', root);
+      if (note) {
+        note.textContent = v.note || '';
+        note.hidden = !v.note;
+      }
+      const now = $('[data-price-now]', root);
+      const was = $('[data-price-was]', root);
+      const off = v.basePrice ? discountPercent(v.basePrice, v.price) : 0;
+      if (now) now.innerHTML = priceSpan(v.price);
+      if (was) {
+        was.hidden = off <= 0;
+        was.innerHTML = off > 0 ? `<s data-usd="${Number(v.basePrice)}">${formatPrice(v.basePrice)}</s><span class="badge badge-accent">-${off}%</span>` : '';
+      }
+      const box = now && now.closest('.product-price-lg');
+      if (box) box.classList.toggle('is-sale', off > 0);
+      const buy = $('[data-buy]', root);
+      if (buy) buy.href = `/checkout?p=${encodeURIComponent(p.slug)}&v=${Number(picker.value)}`;
+      updateOrderLinks();
+    }
     function updateOrderLinks() {
       if (!p) return; // no live catalogue: keep the server's US-dollar links
-      const shown = currency === 'USD' ? formatPrice(p.price) : `${formatPrice(p.price)} (US ${formatPrice(p.price, 'USD')})`;
-      const msg = `Hello Dragon Spring Swords, I'd like to ${inStock ? 'order' : 'ask about'}:\n${p.name}${p.subtitle ? ', ' + p.subtitle : ''}\nPrice shown: ${shown}\n${location.href}`;
+      const v = chosen();
+      const price = v ? v.price : p.price;
+      const shown = currency === 'USD' ? formatPrice(price) : `${formatPrice(price)} (US ${formatPrice(price, 'USD')})`;
+      const msg = `Hello Dragon Spring Swords, I'd like to ${inStock ? 'order' : 'ask about'}:\n${p.name}${p.subtitle ? ', ' + p.subtitle : ''}${v ? '\nOption: ' + v.label : ''}\nPrice shown: ${shown}\n${location.href}`;
       const wa = $('#order-wa');
       const mail = $('#order-mail');
       if (wa) wa.href = `https://wa.me/${S.whatsapp}?text=${encodeURIComponent(msg)}`;
       if (mail) mail.href = `mailto:${S.email}?subject=${encodeURIComponent((inStock ? 'Order: ' : 'Availability: ') + p.name)}&body=${encodeURIComponent(msg + '\n\nMy name:\nCountry for delivery:\n')}`;
     }
+    if (picker) picker.addEventListener('change', showOption);
     updateOrderLinks();
     document.addEventListener('currencychange', updateOrderLinks);
     initOffer(p);
