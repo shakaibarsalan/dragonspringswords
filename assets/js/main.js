@@ -288,6 +288,64 @@
   /* ---------------------------------------------------------------------------
      SHARED PIECES
      ------------------------------------------------------------------------ */
+  /* ---------------------------------------------------------------------------
+     SIDEWAYS ROWS ([data-rail], e.g. "You may also like"): no scrollbar; the next card peeks in, the edge that has
+     more fades, arrows step through, and the row moves on by itself every few seconds (looping back at the end).
+     The automatic step waits while someone points at, touches, scrolls or tabs into the row, and never runs for
+     "reduce motion" or when the row is off screen.
+     ------------------------------------------------------------------------ */
+  function initRails() {
+    $$('[data-rail]').forEach((sec) => {
+      if (sec.dataset.railReady) return;
+      sec.dataset.railReady = '1';
+      const track = $('[data-rail-track]', sec);
+      if (!track) return;
+      const wrap = track.parentElement;
+      const prev = $('[data-rail-prev]', sec);
+      const next = $('[data-rail-next]', sec);
+      const behavior = motionSafe ? 'smooth' : 'auto';
+      const step = () => {
+        const card = track.firstElementChild;
+        const gap = parseFloat(getComputedStyle(track).columnGap) || 0;
+        return card ? card.getBoundingClientRect().width + gap : track.clientWidth;
+      };
+      const edges = () => {
+        const max = track.scrollWidth - track.clientWidth;
+        const left = track.scrollLeft > 4;
+        const right = track.scrollLeft < max - 4;
+        wrap.classList.toggle('can-left', left);
+        wrap.classList.toggle('can-right', right);
+        sec.classList.toggle('is-static', max <= 4);
+        if (prev) prev.disabled = !left;
+        if (next) next.disabled = max <= 4;
+      };
+      const go = (dir) => {
+        const max = track.scrollWidth - track.clientWidth;
+        if (dir > 0 && track.scrollLeft >= max - 4) track.scrollTo({ left: 0, behavior }); // the end: back to the start
+        else track.scrollBy({ left: dir * step(), behavior });
+      };
+      let hovering = false;
+      let waitUntil = 0;
+      const hold = () => { waitUntil = Date.now() + 8000; };
+      if (prev) prev.addEventListener('click', () => { hold(); go(-1); });
+      if (next) next.addEventListener('click', () => { hold(); go(1); });
+      track.addEventListener('scroll', edges, { passive: true });
+      window.addEventListener('resize', edges);
+      ['pointerdown', 'touchstart', 'wheel', 'keydown', 'focusin'].forEach((ev) => track.addEventListener(ev, hold, { passive: true }));
+      sec.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') hovering = true; });
+      sec.addEventListener('pointerleave', () => { hovering = false; });
+      edges();
+      if (!motionSafe) return;
+      let onScreen = false;
+      if ('IntersectionObserver' in window) {
+        new IntersectionObserver(([e]) => { onScreen = e.isIntersecting; }, { threshold: 0.35 }).observe(track);
+      }
+      setInterval(() => {
+        if (onScreen && !hovering && Date.now() > waitUntil && !document.hidden && !sec.classList.contains('is-static')) go(1);
+      }, 3800);
+    });
+  }
+
   function productCard(p, i = 0, eager = false) {
     const discount = p.basePrice ? discountPercent(p.basePrice, p.price) : 0;
     const inStock = p.inStock !== false;
@@ -806,7 +864,7 @@
     const related = products
       .filter((x) => x.slug !== p.slug)
       .sort((a, b) => (b.categorySlug === p.categorySlug) - (a.categorySlug === p.categorySlug))
-      .slice(0, 4);
+      .slice(0, 12); // a sideways row (initRails)
     const myReviews = (C.testimonials || []).filter((r) => r.role === p.name);
     const avg = myReviews.length ? myReviews.reduce((s, r) => s + Number(r.rating || 0), 0) / myReviews.length : 0;
     const pageBlurb = (s) => {
@@ -922,14 +980,16 @@
       </section>
 
       ${related.length ? `
-      <section class="shell section section-tight">
+      <section class="shell section section-tight" data-rail>
         <div class="section-heading"><div><p class="eyebrow">Also in the vault</p><h2 class="display-sm">You may also like</h2></div>
-          <a href="/shop" class="arrow-link">View all ${icon('arrow-right')}</a></div>
-        <div class="product-grid">${related.map((x, i) => productCard(x, i)).join('')}</div>
+          <div class="rail-head"><a href="/shop" class="arrow-link">View all ${icon('arrow-right')}</a>
+            <span class="rail-nav"><button type="button" class="rail-btn" data-rail-prev aria-label="Previous pieces" disabled>${icon('arrow-left')}</button><button type="button" class="rail-btn" data-rail-next aria-label="More pieces">${icon('arrow-right')}</button></span></div></div>
+        <div class="rail-wrap can-right"><div class="rail" data-rail-track tabindex="0" aria-label="More pieces, scroll sideways">${related.map((x, i) => productCard(x, i)).join('')}</div></div>
       </section>` : ''}`;
 
     setMeta(`${p.name} | Dragon Spring Swords`, p.description || `${p.name}${p.subtitle ? ', ' + p.subtitle : ''}. Hand-finished by Dragon Spring Swords.`);
     wireProduct(p);
+    initRails();
   }
 
   /** Order links, gallery and card hovers on a product page (drawn here or by the server). */
@@ -1961,6 +2021,7 @@
   initMotion();
   initScrollEffects();
   initHeroSlides();
+  initRails();
   initLookbook();
   initEmberCursor();
   initVisits();
