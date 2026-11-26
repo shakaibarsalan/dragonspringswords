@@ -477,7 +477,7 @@
         .map(
           (f, i) => `
         <div class="reveal" style="--delay:${i * 0.08}s">
-          <a href="#story" class="forge-card">
+          <a href="${esc(f.href || '#story')}" class="forge-card">
             <div class="forge-frame"><img src="${esc(f.image)}" alt="${esc(f.title)}" loading="lazy" /></div>
             <div class="forge-caption"><p>${esc(f.title)}</p><p>${esc(f.stage)}</p></div>
           </a>
@@ -1451,6 +1451,106 @@
   }
 
   /* ---------------------------------------------------------------------------
+     FORGE-EMBER CURSOR: a glowing ember instead of the arrow, faint sparks when
+     the mouse moves fast, a small burst on click. Desktop mice only: touch
+     screens and "reduce motion" keep the normal cursor, and typing fields keep
+     the text cursor.
+     ------------------------------------------------------------------------ */
+  function initEmberCursor() {
+    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const TYPING = 'input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]), textarea, select, [contenteditable=""], [contenteditable="true"]';
+    const HOT = 'a, button, [role="button"], label, summary, [data-cursor-hot]';
+    const ember = document.createElement('div');
+    ember.className = 'ember-cursor';
+    ember.setAttribute('aria-hidden', 'true');
+    ember.appendChild(document.createElement('span'));
+    const canvas = document.createElement('canvas');
+    canvas.className = 'ember-sparks';
+    canvas.setAttribute('aria-hidden', 'true');
+    document.body.append(canvas, ember);
+    document.documentElement.classList.add('has-ember-cursor');
+
+    const ctx = canvas.getContext('2d');
+    let sparks = [];
+    let running = false;
+    let lastX = null;
+    let lastY = null;
+    let visible = false;
+    function size() {
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      canvas.width = Math.round(innerWidth * dpr);
+      canvas.height = Math.round(innerHeight * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    size();
+    window.addEventListener('resize', size, { passive: true });
+
+    function show(on) {
+      if (on === visible) return;
+      visible = on;
+      ember.classList.toggle('is-on', on);
+    }
+    function spawn(x, y, n, power) {
+      for (let i = 0; i < n && sparks.length < 160; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const v = (0.4 + Math.random() * 1.6) * power;
+        sparks.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 0.6 * power, life: 1, r: 0.6 + Math.random() * 1.1 });
+      }
+      if (!running) {
+        running = true;
+        requestAnimationFrame(frame);
+      }
+    }
+    // The spark layer only animates while sparks are alive, then goes quiet.
+    function frame() {
+      ctx.clearRect(0, 0, innerWidth, innerHeight);
+      sparks = sparks.filter((p) => p.life > 0);
+      for (const p of sparks) {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy -= 0.02;
+        p.vx *= 0.97;
+        p.life -= 0.028;
+        ctx.globalAlpha = Math.max(0, p.life);
+        ctx.fillStyle = p.life > 0.5 ? '#ffd08a' : '#e07a35';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      if (sparks.length) requestAnimationFrame(frame);
+      else running = false;
+    }
+
+    document.addEventListener('mousemove', (e) => {
+      const x = e.clientX;
+      const y = e.clientY;
+      const t = e.target instanceof Element ? e.target : null;
+      const typing = !!(t && t.closest(TYPING));
+      show(!typing);
+      ember.classList.toggle('is-hot', !typing && !!(t && t.closest(HOT)));
+      ember.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+      if (lastX !== null && !typing) {
+        const speed = Math.hypot(x - lastX, y - lastY);
+        if (speed > 16) spawn(x, y, Math.min(3, Math.floor(speed / 16)), 0.6);
+      }
+      lastX = x;
+      lastY = y;
+    }, { passive: true });
+    document.addEventListener('mouseout', (e) => {
+      if (!e.relatedTarget) show(false);
+    });
+    window.addEventListener('blur', () => show(false));
+    document.addEventListener('mousedown', (e) => {
+      if (e.button !== 0 || !visible) return;
+      ember.classList.add('is-press');
+      spawn(e.clientX, e.clientY, 14, 2.2);
+    });
+    document.addEventListener('mouseup', () => ember.classList.remove('is-press'));
+  }
+
+  /* ---------------------------------------------------------------------------
      BOOT
      ------------------------------------------------------------------------ */
   renderLayout();
@@ -1468,6 +1568,7 @@
   initScrollEffects();
   initHeroSlides();
   initLookbook();
+  initEmberCursor();
   // initSmoothScroll() is kept but switched off: JS-driven wheel scrolling runs on the
   // main thread and stuttered on the homepage; the browser's own scrolling stays smooth.
   initChat();

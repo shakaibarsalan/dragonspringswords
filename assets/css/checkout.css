@@ -86,3 +86,10 @@
 
 /* The quantity buttons use a system font: the store font draws "−" as a long bar. */
 .co-stepper button { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+
+/* Pay by card (Payoneer link), shown above the bank details when the order fits the link */
+.co-card { display: grid; gap: 0.875rem; justify-items: start; padding: 1.25rem; border: 1px solid var(--border); border-radius: var(--radius-lg); background: #fff; }
+.co-card p { margin: 0; color: var(--content-muted); font-size: var(--text-sm); }
+.co-card .co-card-title { font-size: var(--text-xs); letter-spacing: 0.12em; text-transform: uppercase; color: var(--content-subtle); }
+@media (max-width: 479px) { .co-card .btn { width: 100%; } }
+.co-rules-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.375rem; }
