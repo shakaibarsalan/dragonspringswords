@@ -1378,6 +1378,17 @@ a.contact-card:hover { border-color: var(--ink); }
   box-shadow: inset 0 0 0 1px rgb(250 248 244 / 0.07); }
 .support-msg.is-assistant .support-bubble { color: var(--sg-muted); }
 .support-meta { font-size: var(--text-2xs); color: var(--sg-subtle); }
+/* An offer's step in the chat: the piece, where the offer stands, and a way to the offer page */
+.support-offer { display: grid; grid-template-columns: 3rem minmax(0, 1fr); gap: 0.125rem 0.75rem; align-items: center;
+  width: min(19rem, 92%); padding: 0.625rem; border-radius: 16px; background: var(--sg-fill); color: var(--sg-text);
+  box-shadow: inset 0 0 0 1px var(--sg-line); text-decoration: none; transition: background-color var(--duration-quick); }
+.support-offer:hover { background: var(--sg-fill-strong); }
+.support-offer img, .support-offer-img { grid-row: span 2; width: 3rem; height: 3rem; border-radius: 10px; object-fit: cover; background: var(--sg-fill); }
+.support-offer-text { display: grid; min-width: 0; }
+.support-offer-text strong { font-size: 0.8125rem; font-weight: 500; line-height: 1.3; overflow: hidden; display: -webkit-box;
+  -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.support-offer-text small { font-size: 0.75rem; color: var(--sg-gold); }
+.support-offer-go { font-size: 0.6875rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--sg-muted); }
 /* "Dragon Spring team is typing": three dots that rise and fall in turn */
 .support-typing { display: grid; justify-items: start; gap: 0.375rem; animation: support-pop 360ms var(--ease-entrance) both; }
 .support-typing-dots { display: inline-flex; align-items: center; gap: 0.3125rem; padding: 0.75rem 0.9375rem; border-radius: 18px;
@@ -1805,6 +1816,10 @@ html.has-intro talkfront-widget, html.has-intro .support, html.has-intro .suppor
 .offer-input span { padding-left: 0.875rem; color: var(--content-subtle); font-size: 1.125rem; }
 .offer-dialog .offer-input input { border: 0 !important; font-size: 1.25rem !important; font-family: var(--font-display) !important; }
 .offer-input:focus-within { border-color: var(--ink); }
+.offer-code-links { margin: 0; font-size: var(--text-xs); color: var(--content-subtle); text-align: center; }
+.offer-link { background: none; border: 0; padding: 0.25rem; font: inherit; color: var(--content-muted); text-decoration: underline;
+  text-underline-offset: 2px; cursor: pointer; }
+.offer-code input[name=code] { font: 500 1.5rem/1.2 ui-monospace, 'SF Mono', Menlo, monospace; letter-spacing: 0.4em; text-align: center; }
 .offer-conv, .offer-hint { font-size: var(--text-xs); color: var(--content-subtle); font-weight: 400; letter-spacing: 0; }
 .offer-opt { font-weight: 400; color: var(--content-subtle); }
 .offer-page { max-width: 40rem; }

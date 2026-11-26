@@ -372,6 +372,7 @@
           ${m.file ? (m.file.kind === 'image'
             ? `<a class="support-photo" href="${esc(m.file.url)}?token=${encodeURIComponent(token)}" target="_blank" rel="noopener"><img src="${esc(m.file.url)}?token=${encodeURIComponent(token)}" alt="${esc(m.file.name)}" loading="lazy" /></a>`
             : `<a class="support-file" href="${esc(m.file.url)}?token=${encodeURIComponent(token)}">${ICON.doc}<span><strong>${esc(m.file.name)}</strong><small>${esc(m.file.size)} · download</small></span></a>`) : ''}
+          ${m.offer ? `<a class="support-offer" href="${esc(m.offer.link)}">${m.offer.image ? `<img src="${esc(m.offer.image)}" alt="" loading="lazy" />` : '<span class="support-offer-img"></span>'}<span class="support-offer-text"><strong>${esc(m.offer.product)}</strong><small>${esc(m.offer.status)}</small></span><span class="support-offer-go">See your offer</span></a>` : ''}
           ${m.text ? `<div class="support-bubble">${esc(m.text)}</div>` : ''}
           ${last ? `<p class="support-meta">${m.from === 'you' ? 'You · ' : ''}${fmt(m.at)}</p>` : ''}
         </div>`;
@@ -512,7 +513,17 @@
   const fold = () => { if (launcher) launcher.classList.toggle('is-compact', window.scrollY > 60); };
   window.addEventListener('scroll', fold, { passive: true });
 
-  window.DSSupport = { open, close };
+  // The offer form joined this browser to a conversation: the launcher now shows it
+  function setToken(t) {
+    if (!t || t === token) return;
+    token = t;
+    store.set(KEY, token);
+    shown = -1;
+    if (panel && !panel.hidden) refresh(true);
+    updateLauncher();
+  }
+
+  window.DSSupport = { open, close, setToken };
   document.addEventListener('click', (e) => {
     const a = e.target.closest('[data-support-open]');
     if (a) { e.preventDefault(); open(); }

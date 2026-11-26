@@ -1683,7 +1683,7 @@
             <h2 id="offer-title" class="display-sm">Make an offer</h2>
             <button type="button" class="review-close" data-close aria-label="Close">${icon('x')}</button>
           </div>
-          <p class="review-help">Name your price for <strong>${esc(name)}</strong>${priceUsd ? ` (listed at ${formatPrice(priceUsd, 'USD')})` : ''}. We reply by email, usually within a day, and you can accept our price or offer again.</p>
+          <p class="review-help">Name your price for <strong>${esc(name)}</strong>${priceUsd ? ` (listed at ${formatPrice(priceUsd, 'USD')})` : ''}. We reply in the chat on this site and by email, usually within a day, and you can accept our price or offer again.</p>
           <label>Your offer in US dollars
             <span class="offer-input"><span>$</span><input name="amount" inputmode="decimal" autocomplete="off" required value="${listed || ''}" placeholder="Your price" /></span>
             ${listed ? `<small class="offer-hint">Listed at ${formatPrice(priceUsd, 'USD')}. Change it to the price you’d like to pay.</small>` : ''}
@@ -1697,6 +1697,17 @@
           <label class="hp" aria-hidden="true">Website <input name="website" tabindex="-1" autocomplete="off" /></label>
           <p class="review-error" role="alert" hidden></p>
           <button type="submit" class="btn btn-dark">Send my offer</button>
+        </form>
+        <form class="offer-code" novalidate hidden>
+          <div class="review-dialog-head">
+            <h2 class="display-sm">Check it’s you</h2>
+            <button type="button" class="review-close" data-close aria-label="Close">${icon('x')}</button>
+          </div>
+          <p class="review-help" data-code-text></p>
+          <label>Code from the email <input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required /></label>
+          <p class="review-error" role="alert" hidden></p>
+          <button type="submit" class="btn btn-dark">Send my offer</button>
+          <p class="offer-code-links"><button type="button" class="offer-link" data-resend>Send a new code</button> · <button type="button" class="offer-link" data-back>Change my offer</button></p>
         </form>
         <div class="review-thanks" hidden>
           <h2 class="display-sm">Offer sent</h2>
@@ -1716,6 +1727,58 @@
         conv.textContent = v && currency !== 'USD' ? `About ${formatPrice(v)} in ${currency}` : '';
       });
       $$('[data-close]', dlg).forEach((b) => b.addEventListener('click', () => dlg.close()));
+      // the code step (an existing customer offering from a browser that isn't in their chat)
+      const code = $('.offer-code', dlg);
+      let handle = '';
+      const remember = (token) => {
+        // this browser is now in their conversation: the offer and our replies show in the chat
+        try { localStorage.setItem('dragonspring:support', token); } catch (_) {}
+        if (window.DSSupport && window.DSSupport.setToken) window.DSSupport.setToken(token);
+      };
+      const done = (message) => {
+        $('.offer-done', dlg).textContent = message;
+        amount.value = '';
+        form.hidden = true;
+        code.hidden = true;
+        $('.review-thanks', dlg).hidden = false;
+      };
+      const codeErr = (m) => { const e = $('.review-error', code); e.textContent = m; e.hidden = !m; };
+      code.elements.code.addEventListener('input', () => {
+        code.elements.code.value = code.elements.code.value.replace(/\D/g, '').slice(0, 6);
+      });
+      code.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const value = code.elements.code.value;
+        if (value.length !== 6) return codeErr('Enter the 6 digits from the email.');
+        const b = $('button[type=submit]', code);
+        b.disabled = true;
+        try {
+          const res = await fetch('/api/support/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ handle, code: value }) });
+          const out = await res.json().catch(() => ({}));
+          if (!res.ok || !out.ok) throw new Error(out.error || 'Couldn’t check the code just now. Please try again.');
+          remember(out.token);
+          done('Your offer is with us. You’ll find it in the chat on this site, and we’ll reply there and by email, usually within a day.');
+        } catch (ex) {
+          codeErr(ex.message === 'Failed to fetch' ? 'Couldn’t reach us just now. Please try again.' : ex.message);
+        } finally {
+          b.disabled = false;
+        }
+      });
+      $('[data-resend]', code).addEventListener('click', async () => {
+        try {
+          const res = await fetch('/api/support/resend', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ handle }) });
+          const out = await res.json().catch(() => ({}));
+          codeErr(res.ok && out.ok ? `A new code is on its way to ${out.hint}.` : (out.error || 'Couldn’t send a new code just now.'));
+        } catch (_) {
+          codeErr('Couldn’t reach us just now. Please try again.');
+        }
+      });
+      $('[data-back]', code).addEventListener('click', () => {
+        code.hidden = true;
+        form.hidden = false;
+      });
       dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -1729,13 +1792,27 @@
         const send = $('button[type=submit]', form);
         send.disabled = true;
         try {
-          const res = await fetch('/api/offers', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...d, product: slug }) });
+          // the chat this browser already holds (if any): an existing customer here needs no code
+          let device = '';
+          try { device = localStorage.getItem('dragonspring:support') || ''; } catch (_) {}
+          const res = await fetch('/api/offers', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...d, product: slug, device, page: location.href }) });
           const out = await res.json().catch(() => ({}));
           if (!res.ok || !out.ok) throw new Error(out.error || 'Couldn’t send your offer. Please try again.');
-          $('.offer-done', dlg).textContent = out.message;
-          amount.value = '';
-          form.hidden = true;
-          $('.review-thanks', dlg).hidden = false;
+          if (out.needsCode) {
+            // already our customer, on a browser that isn't in their chat: a code to their email first
+            handle = out.handle;
+            const first = (d.name.trim().split(/\s+/)[0] || '').replace(/[<>&"]/g, '');
+            $('[data-code-text]', code).textContent = `You’re already our customer${first ? ', ' + first : ''}. To keep your conversation with us private, we’ve emailed a 6-digit code to ${out.hint}. Enter it and your offer comes straight to us.${out.note ? ' ' + out.note : ''}`;
+            form.hidden = true;
+            code.hidden = false;
+            $('.review-error', code).hidden = true;
+            code.elements.code.value = '';
+            code.elements.code.focus();
+            return;
+          }
+          if (out.token) remember(out.token);
+          done(out.message);
         } catch (ex) {
           fail(ex.message === 'Failed to fetch' ? 'Couldn’t reach us just now. Please try again.' : ex.message);
         } finally {
@@ -1746,6 +1823,7 @@
     btn.addEventListener('click', () => {
       if (!dlg) build();
       $('form', dlg).hidden = false;
+      $('.offer-code', dlg).hidden = true;
       $('.review-thanks', dlg).hidden = true;
       $('.review-error', dlg).hidden = true;
       const amount = $('form', dlg).elements.amount;
