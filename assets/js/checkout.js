@@ -49,9 +49,10 @@
     }
   }
 
+  const offerToken = new URLSearchParams(location.search).get('offer') || '';
   async function config(slug) {
     try {
-      const q = slug ? `?p=${encodeURIComponent(slug)}` : '';
+      const q = slug ? `?p=${encodeURIComponent(slug)}${offerToken ? '&offer=' + encodeURIComponent(offerToken) : ''}` : '';
       const res = await fetch('/api/checkout-config' + q, { headers: { Accept: 'application/json' } });
       if (!res.ok) throw new Error();
       return await res.json();
@@ -156,7 +157,9 @@
       message('This piece is sold out', 'Ask us about the next batch. We’ll reserve one for you.', contactButtons());
       return;
     }
-    const maxQty = Math.max(1, Number(cfg.maxQty) || 1);
+    // an agreed offer: that price, for one piece
+    if (cfg.offer) product.price = Number(cfg.offer.price);
+    const maxQty = cfg.offer ? 1 : Math.max(1, Number(cfg.maxQty) || 1);
     const img = (product.images || [])[0];
     const wa = S.whatsapp ? ` or <a href="https://wa.me/${esc(S.whatsapp)}?text=${encodeURIComponent('Hello, a question about ' + product.name)}" target="_blank" rel="noopener">WhatsApp</a>` : '';
     root.innerHTML = `
@@ -232,7 +235,7 @@
             <div>
               <p class="co-item-name">${esc(product.name)}</p>
               ${product.subtitle ? `<p class="co-muted">${esc(product.subtitle)}</p>` : ''}
-              <p class="co-muted">${usd(product.price)} each</p>
+              <p class="co-muted">${cfg.offer ? `<strong class="co-deal">Agreed price ${usd(product.price)}</strong> · offer ${esc(cfg.offer.number)}` : `${usd(product.price)} each`}</p>
             </div>
           </div>
           <div class="co-qty">
@@ -426,7 +429,7 @@
         const res = await fetch('/api/orders', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...data, product: product.slug, qty, adult: true, agree: true }),
+          body: JSON.stringify({ ...data, product: product.slug, qty, adult: true, agree: true, offer: cfg.offer ? cfg.offer.token : '' }),
         });
         const out = await res.json().catch(() => ({}));
         if (!res.ok || !out.ok) {

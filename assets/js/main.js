@@ -24,7 +24,7 @@
   const S = Object.assign(
     {
       email: 'hello@dragonspringswords.com', whatsapp: '', phone: '', instagram: '', facebook: '',
-      showroom: '', announcement: '', order_note: '', chat_src: '', chat_key: '', chat_ai: '0',
+      showroom: '', announcement: '', order_note: '', chat_src: '', chat_key: '', chat_ai: '0', offers_enabled: '0',
     },
     C.settings || {},
   );
@@ -811,6 +811,7 @@
               ${inStock ? `<a class="btn btn-dark btn-block" href="/checkout?p=${encodeURIComponent(p.slug)}" data-buy hidden>Buy now</a>` : ''}
               ${S.whatsapp ? `<a class="btn btn-dark btn-block" id="order-wa" target="_blank" rel="noopener">${icon('whatsapp')} ${inStock ? 'Order on WhatsApp' : 'Ask about availability'}</a>` : ''}
               ${S.email ? `<a class="btn ${S.whatsapp ? 'btn-outline-dark' : 'btn-dark'} btn-block" id="order-mail">${icon('mail')} ${inStock ? 'Email to order' : 'Email about availability'}</a>` : ''}
+              ${inStock && S.offers_enabled === '1' ? '<button type="button" class="btn btn-outline-dark btn-block offer-open" data-offer-open>Make an offer</button>' : ''}
               ${S.order_note ? `<p class="order-note">${esc(S.order_note)}</p>` : ''}
               <ul class="order-points">
                 <li>${icon('flame')} Sharpened and checked by hand</li>
@@ -875,6 +876,7 @@
     }
     updateOrderLinks();
     document.addEventListener('currencychange', updateOrderLinks);
+    initOffer(p);
 
     initGallery();
     initAccordion($('[data-accordion]', root));
@@ -1521,6 +1523,91 @@
       spawn(e.clientX, e.clientY, 14, 2.2);
     });
     document.addEventListener('mouseup', () => ember.classList.remove('is-press'));
+  }
+
+  /* ---------------------------------------------------------------------------
+     MAKE AN OFFER: a small dialog on the product page. The buyer names a price in
+     US dollars (we show it in their currency too); Hadi answers by email, and the
+     buyer follows it on their private offer page.
+     ------------------------------------------------------------------------ */
+  function initOffer(p) {
+    const btn = $('[data-offer-open]');
+    if (!btn) return;
+    const slug = (p && p.slug) || (location.pathname.match(/\/product\/([a-z0-9-]+)/) || [])[1];
+    const name = (p && p.name) || ($('.product-title') || {}).textContent || 'this piece';
+    const priceUsd = p ? Number(p.price) : null;
+    let dlg;
+    function build() {
+      dlg = document.createElement('dialog');
+      dlg.className = 'review-dialog offer-dialog';
+      dlg.setAttribute('aria-labelledby', 'offer-title');
+      dlg.innerHTML = `
+        <form novalidate>
+          <div class="review-dialog-head">
+            <h2 id="offer-title" class="display-sm">Make an offer</h2>
+            <button type="button" class="review-close" data-close aria-label="Close">${icon('x')}</button>
+          </div>
+          <p class="review-help">Name your price for <strong>${esc(name)}</strong>${priceUsd ? ` (listed at ${formatPrice(priceUsd, 'USD')})` : ''}. We reply by email, usually within a day, and you can accept our price or offer again.</p>
+          <label>Your offer in US dollars
+            <span class="offer-input"><span>$</span><input name="amount" inputmode="numeric" autocomplete="off" required placeholder="${priceUsd ? Math.round(priceUsd * 0.85) : ''}" /></span>
+            <small class="offer-conv" aria-live="polite"></small>
+          </label>
+          <div class="review-grid">
+            <label>Your name <input name="name" autocomplete="name" maxlength="80" required /></label>
+            <label>Email <input name="email" type="email" autocomplete="email" maxlength="120" required /></label>
+          </div>
+          <label>A note <small class="offer-opt">optional</small><textarea name="note" rows="2" maxlength="500" placeholder="Anything we should know?"></textarea></label>
+          <label class="hp" aria-hidden="true">Website <input name="website" tabindex="-1" autocomplete="off" /></label>
+          <p class="review-error" role="alert" hidden></p>
+          <button type="submit" class="btn btn-dark">Send my offer</button>
+        </form>
+        <div class="review-thanks" hidden>
+          <h2 class="display-sm">Offer sent</h2>
+          <p class="offer-done"></p>
+          <button type="button" class="btn btn-dark" data-close>Close</button>
+        </div>`;
+      document.body.appendChild(dlg);
+      const form = $('form', dlg);
+      const err = $('.review-error', dlg);
+      const amount = form.elements.amount;
+      const conv = $('.offer-conv', dlg);
+      amount.addEventListener('input', () => {
+        amount.value = amount.value.replace(/[^\d]/g, '').slice(0, 7);
+        const v = Number(amount.value);
+        conv.textContent = v && currency !== 'USD' ? `About ${formatPrice(v)} in ${currency}` : '';
+      });
+      $$('[data-close]', dlg).forEach((b) => b.addEventListener('click', () => dlg.close()));
+      dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const d = Object.fromEntries(new FormData(form).entries());
+        const fail = (m) => { err.textContent = m; err.hidden = false; };
+        if (!Number(d.amount)) return fail('Enter your offer in US dollars.');
+        if (priceUsd && Number(d.amount) >= priceUsd) return fail('That’s the full price, so you can buy it right away.');
+        if (!d.name.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.email.trim())) return fail('Please add your name and email so we can reply.');
+        const send = $('button[type=submit]', form);
+        send.disabled = true;
+        try {
+          const res = await fetch('/api/offers', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...d, product: slug }) });
+          const out = await res.json().catch(() => ({}));
+          if (!res.ok || !out.ok) throw new Error(out.error || 'Couldn’t send your offer. Please try again.');
+          $('.offer-done', dlg).textContent = out.message;
+          form.hidden = true;
+          $('.review-thanks', dlg).hidden = false;
+        } catch (ex) {
+          fail(ex.message === 'Failed to fetch' ? 'Couldn’t reach us just now. Please try again.' : ex.message);
+        } finally {
+          send.disabled = false;
+        }
+      });
+    }
+    btn.addEventListener('click', () => {
+      if (!dlg) build();
+      $('form', dlg).hidden = false;
+      $('.review-thanks', dlg).hidden = true;
+      $('.review-error', dlg).hidden = true;
+      dlg.showModal ? dlg.showModal() : dlg.setAttribute('open', '');
+    });
   }
 
   /* ---------------------------------------------------------------------------
