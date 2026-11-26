@@ -1526,7 +1526,7 @@
      HOMEPAGE INTRO: the logo-reveal film. index.html decides whether to show it
      (adds html.has-intro); here it plays, then fades into the page and hands over
      to the header wordmark's own entrance. Never blocks the page: it gives up if
-     the video can't start within 3 seconds, and ends after 10 at most.
+     the video can't start within 3 seconds, and ends after 8 at most (the film is 5).
      ------------------------------------------------------------------------ */
   function initIntro(after) {
     const box = $('#intro');
@@ -1547,12 +1547,14 @@
       }, 700);
     };
     $('#intro-skip').addEventListener('click', finish);
-    video.addEventListener('ended', () => setTimeout(finish, 600));
+    // the film ends on the finished logo: start fading into the page just before the last frame
+    video.addEventListener('timeupdate', () => { if (video.duration && video.duration - video.currentTime < 0.3) finish(); });
+    video.addEventListener('ended', finish);
     video.addEventListener('error', finish);
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') finish(); });
     const start = setTimeout(() => { if (video.currentTime < 0.1) finish(); }, 3000);
     video.addEventListener('playing', () => clearTimeout(start), { once: true });
-    setTimeout(finish, 10000);
+    setTimeout(finish, 8000);
     const p = video.play();
     if (p && p.catch) p.catch(finish);
   }
