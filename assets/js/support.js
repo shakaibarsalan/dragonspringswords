@@ -36,6 +36,7 @@
 
   let panel, body, compose, launcher, timer, checkTimer, closeTimer;
   let isOpen = false;
+  let stick = true; // keep the conversation on its latest message (until the visitor scrolls up to read)
   let shown = -1;
   let teamCount = 0;
 
@@ -109,6 +110,8 @@
     document.body.appendChild(panel);
     body = panel.querySelector('.support-body');
     compose = panel.querySelector('.support-compose');
+    body.addEventListener('scroll', () => { stick = body.scrollHeight - body.scrollTop - body.clientHeight < 48; }, { passive: true });
+    body.addEventListener('load', () => { if (stick) toLatest(); }, true); // a photo arrived and pushed the latest down
     panel.querySelector('.support-close').addEventListener('click', close);
     panel.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
     const ta = compose.querySelector('textarea');
@@ -380,7 +383,19 @@
         </div>`;
     }).join('') +
       (msgs.some((m) => m.from === 'team' || m.from === 'assistant') ? '' : `<p class="support-wait">${ICON.clock}<span>Thanks, someone from the team will reply soon. You can close this; we’ll email you too.</span></p>`);
-    if (near || shown <= 2) body.scrollTop = body.scrollHeight;
+    if (near || stick || shown <= 2) toLatest();
+  }
+
+  /* The conversation always opens on its latest message. A hidden panel forgets where it was scrolled (it came
+     back at the oldest message), and photos load after the first paint and make it taller, so this goes to the
+     end on opening and a few times while it settles, and stops as soon as the visitor scrolls up. */
+  function toLatest() {
+    if (body) body.scrollTop = body.scrollHeight;
+  }
+  function settleLatest() {
+    stick = true;
+    toLatest();
+    [60, 250, 700, 1500].forEach((t) => setTimeout(() => { if (stick && isOpen) toLatest(); }, t));
   }
 
   async function refresh(first) {
@@ -400,6 +415,7 @@
     if (out && out.ok) {
       renderThread(out);
       setTyping(!!out.typing);
+      if (first && stick) toLatest();
     }
   }
 
@@ -480,6 +496,7 @@
     panel.hidden = false;
     isOpen = true;
     fitScreen();
+    settleLatest();
     document.documentElement.classList.add('support-open');
     if (launcher) launcher.hidden = true;
     if (grow) {
