@@ -34,7 +34,7 @@
     openOnLoad = true;
   }
 
-  let panel, body, compose, launcher, timer, checkTimer;
+  let panel, body, compose, launcher, timer, checkTimer, closeTimer;
   let isOpen = false;
   let shown = -1;
   let teamCount = 0;
@@ -51,8 +51,10 @@
 
   const LOGO = '/assets/img/brand/logo-mark.webp';
   const avatar = (cls = 'support-avatar') => `<img class="${cls}" src="${LOGO}" alt="" width="36" height="36" decoding="async" />`;
+  const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const phone = () => window.matchMedia('(max-width: 599px), (max-height: 540px)').matches;
   const ICON = {
-    close: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    close: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>',
     send: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>',
     arrow: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
     chat: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>',
@@ -83,19 +85,21 @@
     panel.setAttribute('aria-label', 'Chat with our team');
     panel.hidden = true;
     panel.innerHTML = `
-      <div class="support-head">
-        ${avatar('support-head-avatar')}
-        <div class="support-head-text">
-          <p class="support-title">Dragon Spring Swords</p>
-          <p class="support-sub">A real person replies, here and by email</p>
+      <div class="support-panel">
+        <div class="support-head">
+          ${avatar('support-head-avatar')}
+          <div class="support-head-text">
+            <p class="support-title">Dragon Spring Swords</p>
+            <p class="support-sub">A real person replies, here and by email</p>
+          </div>
+          <button type="button" class="support-close" aria-label="Close chat">${ICON.close}</button>
         </div>
-        <button type="button" class="support-close" aria-label="Close chat">${ICON.close}</button>
+        <div class="support-body" aria-live="polite"></div>
       </div>
-      <div class="support-body" aria-live="polite"></div>
       <form class="support-compose" hidden>
-        <label class="support-attach" title="Send a photo or file">${ICON.clip}<span class="sr-only">Send a photo or file</span><input type="file" accept="image/*,.heic,.heif,.pdf,.doc,.docx,.xls,.xlsx,.odt,.ods,.rtf,.txt,.csv" hidden /></label>
         <label class="sr-only" for="support-text">Message</label>
         <textarea id="support-text" rows="1" maxlength="2000" placeholder="Write a message" required></textarea>
+        <label class="support-attach" title="Send a photo or file">${ICON.clip}<span class="sr-only">Send a photo or file</span><input type="file" accept="image/*,.heic,.heif,.pdf,.doc,.docx,.xls,.xlsx,.odt,.ods,.rtf,.txt,.csv" hidden /></label>
         <button type="submit" class="support-send" aria-label="Send">${ICON.send}</button>
       </form>`;
     document.body.appendChild(panel);
@@ -139,6 +143,7 @@
       e.preventDefault();
       const text = ta.value.trim();
       if (!text) return;
+      if (!token) return startChat(text);
       const kept = document.activeElement === ta;
       ta.value = '';
       ta.style.height = '';
@@ -177,64 +182,84 @@
     setTimeout(() => el.remove(), 6000);
   }
 
+  // The first message: the name and email from the card above, the message from the box below.
+  async function startChat(text) {
+    const f = body.querySelector('.support-details');
+    if (!f) return;
+    const field = (n) => f.querySelector(`[name=${n}]`);
+    const err = f.querySelector('.support-error');
+    const fail = (m, name) => {
+      err.textContent = m;
+      err.hidden = false;
+      if (name) {
+        field(name).classList.add('is-bad');
+        field(name).focus({ preventScroll: true });
+      }
+      f.scrollIntoView({ block: 'nearest', behavior: reduced() ? 'auto' : 'smooth' });
+    };
+    const d = { name: field('name').value.trim(), email: field('email').value.trim(), website: field('website').value, message: text };
+    if (!d.name) return fail('Please add your name, so we know who we’re talking to.', 'name');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.email)) return fail('Please add your email, so we can reply even if you leave.', 'email');
+    err.hidden = true;
+    compose.classList.add('is-busy');
+    const out = await api('/api/support/start', { ...d, page: location.href, device: store.get(KEY) || '' });
+    compose.classList.remove('is-busy');
+    if (!out || !out.ok) return fail((out && out.error) || 'Couldn’t reach us just now. Please try again.');
+    const ta = compose.querySelector('textarea');
+    ta.value = '';
+    ta.style.height = '';
+    if (out.needsCode) return renderCode(out, d);
+    token = out.token;
+    store.set(KEY, token);
+    renderThread(out);
+    updateLauncher();
+  }
+
   function renderStart() {
-    compose.hidden = true;
+    compose.hidden = false;
+    compose.querySelector('.support-attach').hidden = true;
+    const ta = compose.querySelector('textarea');
+    ta.placeholder = 'Write your message';
     shown = -1;
     body.innerHTML = `
-      <div class="support-msg is-team support-welcome">
-        ${avatar('support-msg-avatar')}
-        <div class="support-msg-col">
-          <div class="support-bubble">Hello! Ask us anything about a blade, an order or delivery. Someone from our team will reply here, and by email if you’ve left.</div>
-          <p class="support-meta">Dragon Spring team</p>
-        </div>
+      <div class="support-msg is-team is-first is-last is-new support-welcome">
+        <p class="support-who">${avatar('support-who-avatar')}Dragon Spring team</p>
+        <div class="support-bubble">Hello! Ask us anything about a blade, an order or delivery. A real person from our team replies here, and by email if you’ve left.</div>
       </div>
       <div class="support-topics" role="group" aria-label="Start with a topic">
-        <button type="button" data-topic="I have a question about ">A blade</button>
-        <button type="button" data-topic="Can you ship to ">Shipping to my country</button>
-        <button type="button" data-topic="About my order: ">My order</button>
+        <button type="button" style="--i:0" data-topic="I have a question about ">A question about a blade</button>
+        <button type="button" style="--i:1" data-topic="Can you ship to ">Shipping to my country</button>
+        <button type="button" style="--i:2" data-topic="About my order: ">My order</button>
       </div>
-      <form class="support-start support-card" novalidate>
-        <label><span>Your name</span><input name="name" autocomplete="name" maxlength="80" placeholder="Name" required /></label>
-        <label><span>Email</span><input name="email" type="email" autocomplete="email" maxlength="120" placeholder="you@example.com" required /><small>So we can reply if you leave the site.</small></label>
-        <label><span>Message</span><textarea name="message" rows="3" maxlength="2000" placeholder="How can we help?" required></textarea></label>
+      <form class="support-details" novalidate>
+        <p class="support-details-title">Your name and email, so we can reply</p>
+        <div class="support-fields">
+          <label><span class="sr-only">Your name</span><input name="name" autocomplete="name" maxlength="80" placeholder="Your name" required /></label>
+          <label><span class="sr-only">Email</span><input name="email" type="email" autocomplete="email" inputmode="email" maxlength="120" placeholder="Email" required /></label>
+        </div>
         <label class="hp" aria-hidden="true">Website <input name="website" tabindex="-1" autocomplete="off" /></label>
         <p class="support-error" role="alert" hidden></p>
-        <button type="submit" class="support-submit"><span>Start chat</span>${ICON.arrow}</button>
-        <p class="support-fine">We keep this conversation so we can help you. <a href="/page/privacy" target="_blank">Privacy</a></p>
+        <p class="support-fine">Then write your message below. We keep this conversation so we can help you. <a href="/page/privacy" target="_blank">Privacy</a></p>
       </form>`;
-    const f = body.querySelector('.support-start');
-    const msg = f.querySelector('textarea[name=message]');
-    autoGrow(msg, 160);
+    const f = body.querySelector('.support-details');
+    f.querySelectorAll('input').forEach((i) => i.addEventListener('input', () => i.classList.remove('is-bad')));
+    // Enter: name → email → the message (or send it, if it's already written)
+    f.addEventListener('submit', (e) => e.preventDefault());
+    f.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' || e.isComposing) return;
+      e.preventDefault();
+      if (e.target.name === 'name') return f.querySelector('input[name=email]').focus({ preventScroll: true });
+      if (ta.value.trim()) compose.requestSubmit();
+      else ta.focus({ preventScroll: true });
+    });
     body.querySelectorAll('[data-topic]').forEach((b) => b.addEventListener('click', () => {
       body.querySelectorAll('[data-topic]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
       const starters = [...body.querySelectorAll('[data-topic]')].map((x) => x.dataset.topic);
-      if (!msg.value.trim() || starters.includes(msg.value)) msg.value = b.dataset.topic; // never overwrite their own words
-      msg.dispatchEvent(new Event('input'));
-      msg.focus({ preventScroll: true });
-      msg.setSelectionRange(msg.value.length, msg.value.length);
-      f.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      if (!ta.value.trim() || starters.includes(ta.value)) ta.value = b.dataset.topic; // never overwrite their own words
+      ta.dispatchEvent(new Event('input'));
+      ta.focus({ preventScroll: true });
+      ta.setSelectionRange(ta.value.length, ta.value.length);
     }));
-    f.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const d = Object.fromEntries(new FormData(f).entries());
-      const err = f.querySelector('.support-error');
-      const fail = (m) => { err.textContent = m; err.hidden = false; };
-      if (!d.name.trim() || !d.message.trim()) return fail('Please add your name and a message.');
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.email.trim())) return fail('Please give an email address so we can reply.');
-      const btn = f.querySelector('button[type=submit]');
-      const label = btn.querySelector('span');
-      btn.disabled = true;
-      label.textContent = 'Starting…';
-      const out = await api('/api/support/start', { ...d, page: location.href, device: store.get(KEY) || '' });
-      btn.disabled = false;
-      label.textContent = 'Start chat';
-      if (!out || !out.ok) return fail((out && out.error) || 'Couldn’t reach us just now. Please try again.');
-      if (out.needsCode) return renderCode(out, d);
-      token = out.token;
-      store.set(KEY, token);
-      renderThread(out);
-      updateLauncher();
-    });
     focusSoon(f.querySelector('input[name=name]'));
   }
 
@@ -294,26 +319,30 @@
 
   function renderThread(d) {
     compose.hidden = false;
+    compose.querySelector('.support-attach').hidden = false;
+    compose.querySelector('textarea').placeholder = 'Write a message';
     const msgs = d.messages || [];
     teamCount = msgs.filter((m) => m.from === 'team').length;
     store.set(SEEN, String(teamCount));
     if (msgs.length === shown) return;
+    const before = shown;
     shown = msgs.length;
     const near = body.scrollHeight - body.scrollTop - body.clientHeight < 80;
     body.innerHTML = msgs.map((m, i) => {
+      const prev = msgs[i - 1];
       const next = msgs[i + 1];
-      const last = !next || next.from !== m.from; // avatar and time only under the last of a run
-      const who = m.from === 'you' ? 'You' : m.from === 'team' ? 'Dragon Spring team' : 'Dragon Spring (automatic message)';
+      const first = !prev || prev.from !== m.from; // who is speaking: above the first of a run
+      const last = !next || next.from !== m.from; // the time: under the last of a run
+      const fresh = before > 0 && i >= before; // new since the last look: slides in
+      const who = m.from === 'team' ? 'Dragon Spring team' : 'Dragon Spring · automatic message';
       return `
-        <div class="support-msg is-${esc(m.from)}${last ? ' is-last' : ''}">
-          ${m.from === 'team' ? (last ? avatar('support-msg-avatar') : '<span class="support-msg-avatar" aria-hidden="true"></span>') : ''}
-          <div class="support-msg-col">
-            ${m.file ? (m.file.kind === 'image'
-              ? `<a class="support-photo" href="${esc(m.file.url)}?token=${encodeURIComponent(token)}" target="_blank" rel="noopener"><img src="${esc(m.file.url)}?token=${encodeURIComponent(token)}" alt="${esc(m.file.name)}" loading="lazy" /></a>`
-              : `<a class="support-file" href="${esc(m.file.url)}?token=${encodeURIComponent(token)}">${ICON.doc}<span><strong>${esc(m.file.name)}</strong><small>${esc(m.file.size)} · download</small></span></a>`) : ''}
-            ${m.text ? `<div class="support-bubble">${esc(m.text)}</div>` : ''}
-            ${last ? `<p class="support-meta">${who}${m.via === 'email' ? ' · by email' : ''} · ${fmt(m.at)}</p>` : ''}
-          </div>
+        <div class="support-msg is-${esc(m.from)}${first ? ' is-first' : ''}${last ? ' is-last' : ''}${fresh ? ' is-new' : ''}">
+          ${first && m.from !== 'you' ? `<p class="support-who">${avatar('support-who-avatar')}${who}</p>` : ''}
+          ${m.file ? (m.file.kind === 'image'
+            ? `<a class="support-photo" href="${esc(m.file.url)}?token=${encodeURIComponent(token)}" target="_blank" rel="noopener"><img src="${esc(m.file.url)}?token=${encodeURIComponent(token)}" alt="${esc(m.file.name)}" loading="lazy" /></a>`
+            : `<a class="support-file" href="${esc(m.file.url)}?token=${encodeURIComponent(token)}">${ICON.doc}<span><strong>${esc(m.file.name)}</strong><small>${esc(m.file.size)} · download</small></span></a>`) : ''}
+          ${m.text ? `<div class="support-bubble">${esc(m.text)}</div>` : ''}
+          ${last ? `<p class="support-meta">${m.from === 'you' ? 'You · ' : ''}${m.via === 'email' ? 'by email · ' : ''}${fmt(m.at)}</p>` : ''}
         </div>`;
     }).join('') +
       (msgs.some((m) => m.from === 'team' || m.from === 'assistant') ? '' : `<p class="support-wait">${ICON.clock}<span>Thanks, someone from the team will reply soon. You can close this; we’ll email you too.</span></p>`) +
@@ -325,7 +354,7 @@
     // Before a conversation exists there is nothing to poll: draw the start form once, never again
     // (redrawing it every few seconds wiped what the visitor was typing).
     if (!token) {
-      if (first || !body.querySelector('.support-start')) renderStart();
+      if (!body.querySelector('.support-details, .support-start')) renderStart(); // reopening keeps what they typed
       return;
     }
     const out = await api('/api/support/thread?token=' + encodeURIComponent(token) + '&visible=' + (document.visibilityState === 'visible' ? 1 : 0));
@@ -338,11 +367,31 @@
     if (out && out.ok) renderThread(out);
   }
 
+  /* Phones: the chat fills the visible screen, so the message box stays just above the keyboard. */
+  const vv = window.visualViewport;
+  function fitScreen() {
+    if (!panel || panel.hidden) return;
+    if (vv && phone()) {
+      panel.style.height = vv.height + 'px';
+      panel.style.top = vv.offsetTop + 'px';
+    } else {
+      panel.style.height = '';
+      panel.style.top = '';
+    }
+  }
+  if (vv) {
+    vv.addEventListener('resize', fitScreen);
+    vv.addEventListener('scroll', fitScreen);
+  }
+
   function open() {
     build();
     if (hasHalo && window.Halochime && typeof window.Halochime.hide === 'function') window.Halochime.hide();
+    clearTimeout(closeTimer);
+    panel.classList.remove('is-closing');
     panel.hidden = false;
     isOpen = true;
+    fitScreen();
     document.documentElement.classList.add('support-open');
     if (launcher) launcher.hidden = true;
     refresh(true);
@@ -361,13 +410,19 @@
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && isOpen) close(); });
 
   function close() {
-    if (!panel) return;
-    panel.hidden = true;
+    if (!panel || !isOpen) return;
     isOpen = false;
     document.documentElement.classList.remove('support-open');
     clearInterval(timer);
-    if (hasHalo && window.Halochime && typeof window.Halochime.show === 'function') window.Halochime.show();
-    updateLauncher();
+    const done = () => {
+      panel.hidden = true;
+      panel.classList.remove('is-closing');
+      if (hasHalo && window.Halochime && typeof window.Halochime.show === 'function') window.Halochime.show();
+      updateLauncher();
+    };
+    if (reduced()) return done();
+    panel.classList.add('is-closing'); // sinks and fades, then the launcher comes back
+    closeTimer = setTimeout(done, 230);
   }
 
   /* Launcher: our own bubble when HaloChime is off; a "Your conversation" pill once a chat exists. */
@@ -381,7 +436,11 @@
       launcher.addEventListener('click', open);
       document.body.appendChild(launcher);
     }
-    launcher.innerHTML = token ? `${ICON.chat}<span>Your conversation</span><span class="support-dot" hidden></span>` : `${ICON.chat}<span>Chat with us</span>`;
+    launcher.classList.toggle('has-thread', !!token);
+    launcher.setAttribute('aria-label', token ? 'Open your conversation with us' : 'Chat with us');
+    launcher.innerHTML = token
+      ? `<span class="sl-long">Your conversation</span><span class="sl-short">Your chat</span><span class="support-dot" hidden></span><span class="sl-go">${ICON.chat}</span>`
+      : `<span class="sl-long">Ask about a blade, shipping or an order</span><span class="sl-short">Chat with us</span><span class="sl-go">${ICON.send}</span>`;
     launcher.hidden = false;
     checkUnread();
   }

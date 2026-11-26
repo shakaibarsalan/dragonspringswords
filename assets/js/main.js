@@ -1516,6 +1516,8 @@
     document.addEventListener('mouseout', (e) => {
       if (!e.relatedTarget) show(false);
     });
+    // an embedded frame (video, map, payment) shows its own cursor: the ember waits outside it
+    document.addEventListener('mouseover', (e) => { if (e.target && e.target.tagName === 'IFRAME') show(false); });
     window.addEventListener('blur', () => show(false));
     document.addEventListener('mousedown', (e) => {
       if (e.button !== 0 || !visible) return;
@@ -1523,6 +1525,18 @@
       spawn(e.clientX, e.clientY, 14, 2.2);
     });
     document.addEventListener('mouseup', () => ember.classList.remove('is-press'));
+
+    // Pop-up cards (Make an offer, Write a review) open in the browser's top layer, above every
+    // z-index on the page: while one is open the ember and its sparks move into it, so they stay
+    // on top of the card instead of glowing behind it; back to the page when it closes.
+    function follow() {
+      const open = [...document.querySelectorAll('dialog[open]')].filter((d) => {
+        try { return d.matches(':modal'); } catch (_) { return true; }
+      }).pop();
+      const host = open || document.body;
+      if (ember.parentNode !== host) host.append(canvas, ember);
+    }
+    new MutationObserver(follow).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['open'] });
   }
 
   /* ---------------------------------------------------------------------------
