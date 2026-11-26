@@ -596,6 +596,12 @@
     const SORTS = ['featured', 'newest', 'price-asc', 'price-desc'];
     const state = { c: pathSlug('shop', 'c'), q: params.get('q') || '', sort: params.get('sort') || 'featured' };
     if (!SORTS.includes(state.sort)) state.sort = 'featured';
+    // 24 pieces at a time; ?show=48 in the address keeps the place when someone comes back from a product
+    const PER = 24;
+    const showFrom = (v) => Math.min(480, Math.max(PER, Math.ceil((Number(v) || PER) / PER) * PER));
+    state.show = showFrom(params.get('show'));
+    let keepShow = true; // the first drawing and Back/Forward keep the count; a new filter, search or sort starts again
+    let cur = [];
     search.value = state.q;
     sort.value = state.sort;
 
@@ -628,8 +634,56 @@
     chips.addEventListener('scroll', chipEdges, { passive: true });
     window.addEventListener('resize', chipEdges);
 
+    function more() {
+      let box = $('#shop-more');
+      if (!box) {
+        box = document.createElement('div');
+        box.id = 'shop-more';
+        box.className = 'shop-more';
+        grid.after(box);
+        box.addEventListener('click', (e) => { if (e.target.closest('[data-more]')) showMore(); });
+      }
+      const n = Math.min(state.show, cur.length);
+      if (cur.length <= PER) {
+        box.hidden = true;
+        box.innerHTML = '';
+        return;
+      }
+      const left = cur.length - n;
+      box.hidden = false;
+      box.innerHTML = `
+        <p class="shop-more-count" aria-live="polite">Showing ${n} of ${cur.length} pieces</p>
+        <div class="shop-more-bar" aria-hidden="true"><span style="width:${((n / cur.length) * 100).toFixed(1)}%"></span></div>
+        ${left ? `<button type="button" class="btn btn-outline-dark shop-more-btn" data-more>Show ${Math.min(PER, left)} more</button>` : ''}`;
+    }
+    function showMore() {
+      const from = state.show;
+      state.show = Math.min(from + PER, cur.length + PER);
+      const tmp = document.createElement('div');
+      tmp.innerHTML = cur.slice(from, state.show).map((p, i) => productCard(p, from + i, false)).join('');
+      const added = [...tmp.children];
+      added.forEach((el) => grid.appendChild(el));
+      wireCards(grid);
+      updatePrices();
+      observeMotion(grid);
+      more();
+      writeUrl(false);
+      // keyboard and screen-reader users carry on from the first new piece
+      const link = added[0] && added[0].querySelector('a');
+      if (link) link.focus({ preventScroll: true });
+    }
+    function writeUrl(push) {
+      const qs = new URLSearchParams();
+      if (state.q) qs.set('q', state.q);
+      if (state.sort !== 'featured') qs.set('sort', state.sort);
+      if (state.show > PER && cur.length > PER) qs.set('show', String(Math.min(state.show, Math.ceil(cur.length / PER) * PER)));
+      history[push ? 'pushState' : 'replaceState'](null, '', shopUrl(state.c) + (qs.toString() ? '?' + qs : ''));
+    }
+
     let first = true;
     function apply(push) {
+      if (!keepShow) state.show = PER;
+      keepShow = false;
       const q = state.q.trim().toLowerCase();
       let list = products.filter((p) => !state.c || p.categorySlug === state.c);
       if (q) {
@@ -655,7 +709,9 @@
       $$('.chip', chips).forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.c === state.c)));
       count.textContent = `${list.length} ${list.length === 1 ? 'piece' : 'pieces'}`;
 
+      cur = list;
       if (products.length === 0) {
+        cur = [];
         grid.innerHTML = emptyCatalog();
         mountNewsletters(grid);
       } else if (list.length === 0) {
@@ -672,16 +728,13 @@
           apply(true);
         });
       } else {
-        grid.innerHTML = list.map((p, i) => productCard(p, i, i < 4)).join('');
+        grid.innerHTML = list.slice(0, state.show).map((p, i) => productCard(p, i, i < 4)).join('');
         wireCards(grid);
       }
       updatePrices();
       observeMotion(grid);
-
-      const qs = new URLSearchParams();
-      if (state.q) qs.set('q', state.q);
-      if (state.sort !== 'featured') qs.set('sort', state.sort);
-      history[push ? 'pushState' : 'replaceState'](null, '', shopUrl(state.c) + (qs.toString() ? '?' + qs : ''));
+      more();
+      writeUrl(push);
     }
 
     chips.addEventListener('click', (e) => {
@@ -717,6 +770,8 @@
       } catch (_) {}
       state.q = p.get('q') || '';
       state.sort = SORTS.includes(p.get('sort')) ? p.get('sort') : 'featured';
+      state.show = showFrom(p.get('show'));
+      keepShow = true;
       search.value = state.q;
       sort.value = state.sort;
       apply(false);
