@@ -265,6 +265,7 @@
             <div><dt>Shipping <small>insured, tracked, signed-for</small></dt><dd id="co-shipping"></dd></div>
             <div class="co-total"><dt>Total</dt><dd><span id="co-total"></span> <small>USD</small><span class="co-approx" id="co-approx"></span></dd></div>
           </dl>
+          <p class="co-duties">Import duties, VAT and customs clearance in your country are paid by you. Remote areas can cost extra to reach; we tell you before you pay.</p>
           ${BADGES}
           <div class="co-flow">
             <p class="co-summary-title">What happens next</p>

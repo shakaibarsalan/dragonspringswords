@@ -82,6 +82,7 @@
 .co-pay p { margin: 0; font-size: var(--text-sm); color: var(--content-muted); line-height: 1.5; }
 .co-pay .co-pay-title { font-size: 0.6875rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--content-subtle); margin-bottom: 0.125rem; }
 .co-pay[hidden], .co-paywith[hidden] { display: none; }
+.co-duties { margin: 0.75rem 0 0; font-size: 0.8125rem; line-height: 1.5; color: var(--content-muted); }
 /* Card or bank transfer, when both apply: two big choices */
 .co-paywith { display: grid; gap: 0.625rem; margin: 0; padding: 0; border: 0; min-width: 0; }
 .co-paywith legend { padding: 0; margin-bottom: 0.25rem; font-size: 0.6875rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--content-subtle); }
