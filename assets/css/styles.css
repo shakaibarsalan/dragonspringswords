@@ -1952,13 +1952,14 @@ html.has-intro talkfront-widget, html.has-intro .support, html.has-intro .suppor
    ========================================================================== */
 @media (max-width: 767px) {
   .hero { min-height: calc(100svh - var(--above-hero, 0px)); }
-  .hero-media { height: 60svh; -webkit-mask-image: linear-gradient(to bottom, #000 50%, transparent 97%); mask-image: linear-gradient(to bottom, #000 50%, transparent 97%); }
-  .hero::before {
-    background:
-      linear-gradient(to bottom, rgb(17 18 20 / 0.5), transparent 22%),
-      linear-gradient(to top, var(--ink) 0%, var(--ink) 40%, rgb(17 18 20 / 0) 62%);
-  }
-  .hero-copy { padding-top: 42svh; padding-bottom: 5.5rem; } /* clear of the chat button in the corner */
+  /* a column: the photo takes all the room the words leave (no empty band on tall screens), and its last
+     9rem fade into black under the top of the words */
+  .hero { flex-direction: column; align-items: stretch; }
+  .hero-media { position: relative; inset: auto; flex: 1 1 auto; height: auto; min-height: 48svh; margin-bottom: calc(-1 * min(4rem, 7svh));
+    -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - min(9rem, 36%)), transparent);
+    mask-image: linear-gradient(to bottom, #000 calc(100% - min(9rem, 36%)), transparent); }
+  .hero::before { background: linear-gradient(to bottom, rgb(17 18 20 / 0.5), transparent 22%); }
+  .hero-copy { position: relative; padding-top: 0; padding-bottom: 5.5rem; } /* clear of the chat button in the corner */
   /* the picture bars sit at the top of the photo, like stories */
   .hero-slides-ui { top: calc(var(--header-h) + 0.625rem); bottom: auto; }
   .hero-bar::before { background: rgb(250 248 244 / 0.5); box-shadow: 0 0 6px rgb(0 0 0 / 0.45); }
