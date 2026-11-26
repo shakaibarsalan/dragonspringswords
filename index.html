@@ -34,15 +34,13 @@
 </head>
 <body data-page="home">
   <!-- Intro: the logo-reveal film (Google Flow / Veo, from the Blender logo). Once a week per visitor,
-       skippable; never for reduced motion, data saver, slow connections or bots. main.js plays it. -->
+       skippable; never for reduced motion, data saver, slow connections or bots. Phones held upright get
+       the portrait cut, other screens the 16:9 film (720p up to 900px wide). main.js plays it. -->
   <div class="intro" id="intro" hidden>
-    <video id="intro-video" muted playsinline preload="auto" poster="/assets/video/logo-reveal-poster.webp?v=2" aria-label="Dragon Spring Swords logo animation">
-      <source src="/assets/video/logo-reveal-720p.mp4?v=2" type="video/mp4" media="(max-width: 900px)" />
-      <source src="/assets/video/logo-reveal-1080p.mp4?v=2" type="video/mp4" />
-    </video>
+    <video id="intro-video" muted playsinline preload="auto" aria-label="Dragon Spring Swords logo animation"></video>
     <button type="button" class="intro-skip" id="intro-skip">Skip intro</button>
   </div>
-  <script>(function(){try{var ok=!matchMedia('(prefers-reduced-motion: reduce)').matches&&!navigator.webdriver&&!/bot|crawl|spider|lighthouse|headless|preview/i.test(navigator.userAgent);var c=navigator.connection;if(c&&(c.saveData||/(^|-)(2g|3g)$/.test(c.effectiveType||'')))ok=false;if(/[?&]nointro/.test(location.search))ok=false;if(ok&&Date.now()-(+localStorage.getItem('ds-intro-at')||0)<6048e5)ok=false;if(ok){localStorage.setItem('ds-intro-at',Date.now());document.documentElement.classList.add('has-intro');document.getElementById('intro').hidden=false;}}catch(e){}})();</script>
+  <script>(function(){try{var ok=!matchMedia('(prefers-reduced-motion: reduce)').matches&&!navigator.webdriver&&!/bot|crawl|spider|lighthouse|headless|preview/i.test(navigator.userAgent);var c=navigator.connection;if(c&&(c.saveData||/(^|-)(2g|3g)$/.test(c.effectiveType||'')))ok=false;if(/[?&]nointro/.test(location.search))ok=false;if(ok&&Date.now()-(+localStorage.getItem('ds-intro-at')||0)<6048e5)ok=false;if(ok){localStorage.setItem('ds-intro-at',Date.now());document.documentElement.classList.add('has-intro');document.getElementById('intro').hidden=false;var w=innerWidth,h=innerHeight,f=h>w*1.15?'portrait':(w<=900?'720p':'1080p');var v=document.getElementById('intro-video');v.poster='/assets/video/logo-reveal-poster.webp?v=2';v.src='/assets/video/logo-reveal-'+f+'.mp4?v=3';}}catch(e){}})();</script>
   <div id="layout-top"></div>
 
   <main id="main" style="position:relative">

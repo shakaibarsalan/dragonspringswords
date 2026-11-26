@@ -1653,3 +1653,5 @@ a.contact-card:hover { border-color: var(--ink); }
 .intro-skip:hover { background: rgb(241 212 140 / 0.12); }
 @keyframes intro-skip-in { to { opacity: 1; } }
 html.has-intro, html.has-intro body { overflow: hidden; }
+/* the chat buttons wait until the intro has finished */
+html.has-intro talkfront-widget, html.has-intro .support { visibility: hidden !important; }
