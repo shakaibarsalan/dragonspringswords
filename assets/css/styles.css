@@ -1350,6 +1350,16 @@ a.contact-card:hover { border-color: var(--ink); }
   box-shadow: inset 0 0 0 1px rgb(250 248 244 / 0.07); }
 .support-msg.is-assistant .support-bubble { color: var(--sg-muted); }
 .support-meta { font-size: var(--text-2xs); color: var(--sg-subtle); }
+/* "Dragon Spring team is typing": three dots that rise and fall in turn */
+.support-typing { display: grid; justify-items: start; gap: 0.375rem; animation: support-pop 360ms var(--ease-entrance) both; }
+.support-typing-dots { display: inline-flex; align-items: center; gap: 0.3125rem; padding: 0.75rem 0.9375rem; border-radius: 18px;
+  background: var(--sg-fill-strong); box-shadow: inset 0 0 0 1px rgb(250 248 244 / 0.07); }
+.support-typing-dots i { width: 0.4375rem; height: 0.4375rem; border-radius: 50%; background: var(--sg-text); opacity: 0.35;
+  animation: support-dot 1.2s ease-in-out infinite; }
+.support-typing-dots i:nth-child(2) { animation-delay: 0.15s; }
+.support-typing-dots i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes support-dot { 0%, 60%, 100% { transform: none; opacity: 0.35; } 30% { transform: translateY(-4px); opacity: 0.95; } }
+@media (prefers-reduced-motion: reduce) { .support-typing, .support-typing-dots i { animation: none; } .support-typing-dots i { opacity: 0.6; } }
 
 /* Before the first message: topics rise in one by one, then the name and email card */
 .support-topics { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.5rem; }

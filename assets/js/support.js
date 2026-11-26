@@ -251,7 +251,7 @@
         </div>
         <label class="hp" aria-hidden="true">Website <input name="website" tabindex="-1" autocomplete="off" /></label>
         <p class="support-error" role="alert" hidden></p>
-        <p class="support-fine">Then write your message below. We keep this conversation so we can help you. <a href="/page/privacy" target="_blank">Privacy</a></p>
+        <p class="support-fine">Then write your message below. <a href="/page/privacy" target="_blank">Privacy</a></p>
       </form>`;
     const f = body.querySelector('.support-details');
     f.querySelectorAll('input').forEach((i) => i.addEventListener('input', () => i.classList.remove('is-bad')));
@@ -283,7 +283,7 @@
     shown = -1;
     body.innerHTML = `
       <div class="support-intro">
-        <p><strong>Welcome back${form.name ? ', ' + esc(form.name.split(' ')[0]) : ''}.</strong> We found your earlier conversation (${esc(info.number)}).</p>
+        <p><strong>Welcome back${form.name ? ', ' + esc(form.name.split(' ')[0]) : ''}.</strong> We found your earlier conversation.</p>
         <p>To keep it private, we’ve emailed a 6-digit code to <strong>${esc(info.hint)}</strong>. Enter it to carry on where you left off.</p>
         ${info.note ? `<p>${esc(info.note)}</p>` : ''}
       </div>
@@ -376,8 +376,7 @@
           ${last ? `<p class="support-meta">${m.from === 'you' ? 'You · ' : ''}${fmt(m.at)}</p>` : ''}
         </div>`;
     }).join('') +
-      (msgs.some((m) => m.from === 'team' || m.from === 'assistant') ? '' : `<p class="support-wait">${ICON.clock}<span>Thanks, someone from the team will reply soon. You can close this; we’ll email you too.</span></p>`) +
-      `<p class="support-fine support-ref">Reference ${esc(d.number || '')}. You can also reply to our email; it all stays in this conversation.</p>`;
+      (msgs.some((m) => m.from === 'team' || m.from === 'assistant') ? '' : `<p class="support-wait">${ICON.clock}<span>Thanks, someone from the team will reply soon. You can close this; we’ll email you too.</span></p>`);
     if (near || shown <= 2) body.scrollTop = body.scrollHeight;
   }
 
@@ -395,7 +394,30 @@
       updateLauncher();
       return renderStart();
     }
-    if (out && out.ok) renderThread(out);
+    if (out && out.ok) {
+      renderThread(out);
+      setTyping(!!out.typing);
+    }
+  }
+
+  /* While someone in our team is writing a reply: their name and three moving dots, like any messenger. */
+  function setTyping(on) {
+    let el = body.querySelector('.support-typing');
+    if (!on) {
+      if (el) el.remove();
+      return;
+    }
+    if (el) return;
+    const near = body.scrollHeight - body.scrollTop - body.clientHeight < 140;
+    el = document.createElement('div');
+    el.className = 'support-typing';
+    el.setAttribute('role', 'status');
+    el.innerHTML = `<p class="support-who">${avatar('support-who-avatar')}Dragon Spring team is typing</p>` +
+      '<span class="support-typing-dots" aria-hidden="true"><i></i><i></i><i></i></span>';
+    const after = body.querySelector('.support-wait, .support-ref');
+    if (after) after.before(el);
+    else body.appendChild(el);
+    if (near) body.scrollTop = body.scrollHeight;
   }
 
   /* Phones: the chat fills the visible screen, so the message box stays just above the keyboard. */
@@ -427,7 +449,7 @@
     if (launcher) launcher.hidden = true;
     refresh(true);
     clearInterval(timer);
-    timer = setInterval(() => { if (token && document.visibilityState === 'visible') refresh(); }, 4000);
+    timer = setInterval(() => { if (token && document.visibilityState === 'visible') refresh(); }, 2500);
     if (token) focusSoon(compose.querySelector('textarea'));
   }
 
