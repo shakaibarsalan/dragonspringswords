@@ -1202,13 +1202,15 @@
     const contact =
       slug === 'contact'
         ? `<div class="contact-cards">
-            ${S.whatsapp ? card(`https://wa.me/${esc(S.whatsapp)}`, 'whatsapp', 'WhatsApp', '+' + S.whatsapp, true) : ''}
+            ${S.whatsapp ? card(`https://wa.me/${esc(S.whatsapp)}`, 'whatsapp', 'WhatsApp', (S.phone || '').replace(/[\s+]/g, '') === S.whatsapp ? S.phone : '+' + S.whatsapp, true) : ''}
             ${S.email ? card(`mailto:${esc(S.email)}`, 'mail', 'Email', S.email) : ''}
             ${S.phone ? card(`tel:${esc(S.phone.replace(/[^\d+]/g, ''))}`, 'phone', 'Phone', S.phone) : ''}
             ${S.instagram ? card(`https://instagram.com/${esc(S.instagram)}`, 'instagram', 'Instagram', '@' + S.instagram, true) : ''}
             ${S.facebook ? card(`https://facebook.com/${esc(S.facebook)}`, 'facebook', 'Facebook', S.facebook, true) : ''}
             ${S.showroom ? `<div class="contact-card">${icon('pin', 'icon')}<span><strong>Visit</strong>${esc(S.showroom)}</span></div>` : ''}
-          </div>`
+          </div>${S.whatsapp === '923391906026' ? `
+          <div class="contact-qr"><img src="/assets/img/whatsapp-qr.png" alt="QR code to message Dragon Spring Swords on WhatsApp" width="148" height="148" loading="lazy" />
+            <div><strong>Message us from your phone</strong><p>Point your phone’s camera at the code to open a WhatsApp chat with Dragon Spring Swords.</p></div></div>` : ''}`
         : '';
     root.innerHTML = `
       <div class="shell info-shell">
