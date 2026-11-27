@@ -1144,22 +1144,31 @@
         const open = !item.classList.contains('is-open');
         // A section above this one closes while this one opens: keep the heading you clicked where it is on
         // screen, so the page doesn't slide it away from under your finger while the heights change.
-        const top = head.getBoundingClientRect().top;
+        // Where the heading sits on the page (not on screen): only the sections' height changes move it, never the
+        // visitor's own scrolling, so a trackpad still gliding after a scroll is left alone.
+        const at = () => head.getBoundingClientRect().top + window.scrollY;
+        let last = at();
         items.forEach((x) => {
           const on = x === item && open;
           x.classList.toggle('is-open', on);
           $('.acc-head', x).setAttribute('aria-expanded', String(on));
         });
         cancelAnimationFrame(hold);
+        const root = document.documentElement;
+        root.style.overflowAnchor = 'none'; // we hold it ourselves; the browser's own scroll anchoring would double it
         const until = performance.now() + 900; // a little longer than the open/close animation
-        const stop = () => { cancelAnimationFrame(hold); window.removeEventListener('wheel', stop); window.removeEventListener('touchstart', stop); };
-        window.addEventListener('wheel', stop, { passive: true, once: true }); // the visitor scrolls: let them
-        window.addEventListener('touchstart', stop, { passive: true, once: true });
+        let owed = 0; // sub-pixel moves add up until they make a whole pixel
         const keep = () => {
-          const drift = head.getBoundingClientRect().top - top;
-          if (Math.abs(drift) > 0.5) window.scrollBy({ top: drift, left: 0, behavior: 'instant' }); // the page scrolls smoothly by default
+          const now = at();
+          owed += now - last;
+          last = now;
+          const step = Math.round(owed);
+          if (step) {
+            window.scrollBy({ top: step, left: 0, behavior: 'instant' }); // the page scrolls smoothly by default
+            owed -= step;
+          }
           if (performance.now() < until) hold = requestAnimationFrame(keep);
-          else stop();
+          else root.style.overflowAnchor = '';
         };
         hold = requestAnimationFrame(keep);
       });
