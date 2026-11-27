@@ -1004,6 +1004,13 @@
     const options = p && Array.isArray(p.variants) ? p.variants : [];
     let current = Math.max(0, radios.findIndex((r) => r.checked));
     const chosen = () => (radios.length && options[current]) || null;
+    // the chat (support.js) tags this piece, with the option chosen, when the visitor writes from this page
+    window.DSProductNow = () => {
+      if (!p) return null;
+      const v = chosen();
+      return { slug: p.slug, name: p.name, option: v ? v.label : '',
+        image: (v && (v.thumb || v.image)) || (p.thumbs || p.images || [])[0] || '' };
+    };
     // An option with its own photo shows it as the first photo; others bring back the product's own.
     const firstSlide = $('#gallery-main .gallery-slide img', root);
     const firstThumb = $('.gallery-rail button img', root);
@@ -1130,14 +1137,31 @@
     if (!box) return;
     box.classList.add('is-ready'); // without JS every section stays open
     const items = $$('.acc-item', box);
+    let hold = 0;
     items.forEach((item) => {
-      $('.acc-head', item).addEventListener('click', () => {
+      const head = $('.acc-head', item);
+      head.addEventListener('click', () => {
         const open = !item.classList.contains('is-open');
+        // A section above this one closes while this one opens: keep the heading you clicked where it is on
+        // screen, so the page doesn't slide it away from under your finger while the heights change.
+        const top = head.getBoundingClientRect().top;
         items.forEach((x) => {
           const on = x === item && open;
           x.classList.toggle('is-open', on);
           $('.acc-head', x).setAttribute('aria-expanded', String(on));
         });
+        cancelAnimationFrame(hold);
+        const until = performance.now() + 900; // a little longer than the open/close animation
+        const stop = () => { cancelAnimationFrame(hold); window.removeEventListener('wheel', stop); window.removeEventListener('touchstart', stop); };
+        window.addEventListener('wheel', stop, { passive: true, once: true }); // the visitor scrolls: let them
+        window.addEventListener('touchstart', stop, { passive: true, once: true });
+        const keep = () => {
+          const drift = head.getBoundingClientRect().top - top;
+          if (Math.abs(drift) > 0.5) window.scrollBy({ top: drift, left: 0, behavior: 'instant' }); // the page scrolls smoothly by default
+          if (performance.now() < until) hold = requestAnimationFrame(keep);
+          else stop();
+        };
+        hold = requestAnimationFrame(keep);
       });
     });
   }

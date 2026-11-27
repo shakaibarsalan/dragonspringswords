@@ -39,6 +39,8 @@
   let stick = true; // keep the conversation on its latest message (until the visitor scrolls up to read)
   let shown = -1;
   let teamCount = 0;
+  let lastMsgs = []; // the conversation as last drawn: which pieces are already tagged in it
+  let tagOff = ''; // a piece (slug|option) not to tag again on this page: untagged with the cross, or just sent
 
   const fmt = (ts) => {
     const d = new Date(ts * 1000);
@@ -83,6 +85,42 @@
     ta.addEventListener('input', fit);
   };
 
+  /* The piece on screen. On a product page the chat tags it (with the option chosen) on the next message,
+     shown above the message box with a cross to untag it. Sent, it becomes a card in the conversation. */
+  function pieceNow() {
+    const m = location.pathname.match(/^\/product\/([a-z0-9-]+)/);
+    if (!m) return null;
+    let p = null;
+    try { p = window.DSProductNow ? window.DSProductNow() : null; } catch (_) { p = null; }
+    if (p && p.slug === m[1]) return { slug: p.slug, name: p.name || '', image: p.image || '', option: p.option || '' };
+    const h = document.querySelector('#product h1');
+    const img = document.querySelector('#gallery-main img');
+    return h ? { slug: m[1], name: h.textContent.trim(), image: img ? img.currentSrc || img.src : '', option: '' } : null;
+  }
+  const pieceKey = (p) => p.slug + '|' + (p.option || '');
+  function pieceToTag() {
+    const p = pieceNow();
+    if (!p || !p.name || tagOff === pieceKey(p)) return null;
+    const said = lastMsgs.some((m) => m.product && m.product.link === '/product/' + p.slug && (m.product.option || '') === p.option);
+    return said ? null : p; // already in this conversation: no need to tag it again
+  }
+  function updateTag() {
+    if (!compose) return;
+    const el = compose.querySelector('.support-tag');
+    const p = compose.hidden ? null : pieceToTag();
+    compose.classList.toggle('has-tag', !!p);
+    el.hidden = !p;
+    if (!p || el.dataset.key === pieceKey(p)) return;
+    el.dataset.key = pieceKey(p);
+    el.innerHTML = `${p.image ? `<img src="${esc(p.image)}" alt="" />` : ''}<span class="support-tag-text"><small>Asking about</small><strong>${esc(p.name)}${p.option ? ` · ${esc(p.option)}` : ''}</strong></span><button type="button" class="support-tag-x" aria-label="Don’t tag this piece">${ICON.x}</button>`;
+  }
+  // what goes with the next message: the tagged piece, if it's still tagged
+  const tagData = () => {
+    const p = compose && !compose.querySelector('.support-tag').hidden ? pieceToTag() : null;
+    return p ? { product: p.slug, option: p.option } : {};
+  };
+  const tagSent = (tag) => { if (tag.product) { tagOff = tag.product + '|' + (tag.option || ''); updateTag(); } };
+
   function build() {
     if (panel) return;
     panel = document.createElement('div');
@@ -103,6 +141,7 @@
         <div class="support-body" aria-live="polite"></div>
       </div>
       <form class="support-compose" hidden>
+        <div class="support-tag" hidden></div>
         <label class="sr-only" for="support-text">Message</label>
         <textarea id="support-text" rows="1" maxlength="2000" placeholder="Write a message" required></textarea>
         <label class="support-attach" title="Send a photo or file">${ICON.clip}<span class="sr-only">Send a photo or file</span><input type="file" accept="image/*,.heic,.heif,.pdf,.doc,.docx,.xls,.xlsx,.odt,.ods,.rtf,.txt,.csv" hidden /></label>
@@ -134,6 +173,15 @@
     ta.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); compose.requestSubmit(); }
     });
+    compose.querySelector('.support-tag').addEventListener('click', (e) => {
+      if (!e.target.closest('.support-tag-x')) return;
+      const p = pieceNow();
+      tagOff = p ? pieceKey(p) : '';
+      updateTag();
+      ta.focus({ preventScroll: true });
+    });
+    // a different option chosen on the product page while the chat is open: the tag follows it
+    document.addEventListener('change', (e) => { if (e.target.matches && e.target.matches('[data-option-radio]')) updateTag(); });
     const fileInput = compose.querySelector('.support-attach input');
     fileInput.addEventListener('change', async () => {
       const file = fileInput.files && fileInput.files[0];
@@ -164,11 +212,12 @@
       stick = true; // sending takes you down to the newest message, even if you'd scrolled up to read
       toLatest();
       const kept = document.activeElement === ta;
+      const tag = tagData();
       ta.value = '';
       ta.style.height = '';
       if (kept) ta.focus({ preventScroll: true }); // keyboard stays up for the next message
-      const out = await api('/api/support/message', { token, message: text });
-      if (out && out.ok) refresh();
+      const out = await api('/api/support/message', { token, message: text, ...tag });
+      if (out && out.ok) { tagSent(tag); refresh(); }
       else {
         ta.value = text;
         note((out && out.error) || 'Couldn’t send just now. Please try again.');
@@ -205,8 +254,9 @@
   const STARTERS = ['I have a question about', 'Can you ship to', 'About my order:'];
   const onlyStarter = (text) => STARTERS.some((s) => text.replace(/\s+$/, '') === s);
 
-  // The first message: the name and email from the card above, the message from the box below.
-  async function startChat(text) {
+  // Starting: the name and email from the card above. From its Start chat button (fromCard) that's all it takes, and
+  // anything already typed below stays in the box to send; from the send button the message goes with it.
+  async function startChat(text, fromCard) {
     const f = body.querySelector('.support-details');
     if (!f) return;
     const field = (n) => f.querySelector(`[name=${n}]`);
@@ -220,8 +270,8 @@
       }
       f.scrollIntoView({ block: 'nearest', behavior: reduced() ? 'auto' : 'smooth' });
     };
-    const d = { name: field('name').value.trim(), email: field('email').value.trim(), website: field('website').value, message: text };
-    if (onlyStarter(text)) {
+    const d = { name: field('name').value.trim(), email: field('email').value.trim(), website: field('website').value, message: fromCard ? '' : text };
+    if (!fromCard && onlyStarter(text)) {
       const ta = compose.querySelector('textarea');
       ta.focus({ preventScroll: true });
       ta.setSelectionRange(ta.value.length, ta.value.length);
@@ -230,18 +280,49 @@
     if (!d.name) return fail('Please add your name, so we know who we’re talking to.', 'name');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.email)) return fail('Please add your email, so we can reply even if you leave.', 'email');
     err.hidden = true;
+    const tag = d.message ? tagData() : {};
+    const btn = f.querySelector('.support-submit');
     compose.classList.add('is-busy');
-    const out = await api('/api/support/start', { ...d, page: location.href, device: store.get(KEY) || '' });
+    btn.disabled = true;
+    const out = await api('/api/support/start', { ...d, ...tag, page: location.href, device: store.get(KEY) || '' });
     compose.classList.remove('is-busy');
+    btn.disabled = false;
     if (!out || !out.ok) return fail((out && out.error) || 'Couldn’t reach us just now. Please try again.');
     const ta = compose.querySelector('textarea');
-    ta.value = '';
-    ta.style.height = '';
-    if (out.needsCode) return renderCode(out, d);
+    if (d.message) {
+      ta.value = '';
+      ta.style.height = '';
+      tagSent(tag);
+    }
+    if (out.needsCode) return renderCode(out, { ...d, ...tag });
     token = out.token;
     store.set(KEY, token);
     renderThread(out);
     updateLauncher();
+    if (fromCard) focusSoon(ta);
+  }
+
+  const welcome = (name) => `
+      <div class="support-msg is-team is-first is-last is-new support-welcome">
+        <p class="support-who">${avatar('support-who-avatar')}Dragon Spring team</p>
+        <div class="support-bubble">${name ? `Hi ${esc(name.split(' ')[0])}! ` : 'Hello! '}Ask us anything about a blade, an order or delivery. A real person from our team replies here, and by email if you’ve left.</div>
+      </div>
+      <div class="support-topics" role="group" aria-label="Start with a topic">
+        <button type="button" style="--i:0" data-topic="I have a question about ">A question about a blade</button>
+        <button type="button" style="--i:1" data-topic="Can you ship to ">Shipping to my country</button>
+        <button type="button" style="--i:2" data-topic="About my order: ">My order</button>
+      </div>`;
+  // a topic button puts its opening words in the message box (never over the visitor's own words)
+  function wireTopics() {
+    const ta = compose.querySelector('textarea');
+    body.querySelectorAll('[data-topic]').forEach((b) => b.addEventListener('click', () => {
+      body.querySelectorAll('[data-topic]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      const starters = [...body.querySelectorAll('[data-topic]')].map((x) => x.dataset.topic);
+      if (!ta.value.trim() || starters.includes(ta.value)) ta.value = b.dataset.topic;
+      ta.dispatchEvent(new Event('input'));
+      ta.focus({ preventScroll: true });
+      ta.setSelectionRange(ta.value.length, ta.value.length);
+    }));
   }
 
   function renderStart() {
@@ -250,16 +331,7 @@
     const ta = compose.querySelector('textarea');
     ta.placeholder = 'Write your message';
     shown = -1;
-    body.innerHTML = `
-      <div class="support-msg is-team is-first is-last is-new support-welcome">
-        <p class="support-who">${avatar('support-who-avatar')}Dragon Spring team</p>
-        <div class="support-bubble">Hello! Ask us anything about a blade, an order or delivery. A real person from our team replies here, and by email if you’ve left.</div>
-      </div>
-      <div class="support-topics" role="group" aria-label="Start with a topic">
-        <button type="button" style="--i:0" data-topic="I have a question about ">A question about a blade</button>
-        <button type="button" style="--i:1" data-topic="Can you ship to ">Shipping to my country</button>
-        <button type="button" style="--i:2" data-topic="About my order: ">My order</button>
-      </div>
+    body.innerHTML = `${welcome('')}
       <form class="support-details" novalidate>
         <p class="support-details-title">Your name and email, so we can reply</p>
         <div class="support-fields">
@@ -268,28 +340,21 @@
         </div>
         <label class="hp" aria-hidden="true">Website <input name="website" tabindex="-1" autocomplete="off" /></label>
         <p class="support-error" role="alert" hidden></p>
-        <p class="support-fine">Then write your message below. <a href="/page/privacy" target="_blank">Privacy</a></p>
+        <button type="submit" class="support-submit"><span>Start chat</span>${ICON.arrow}</button>
+        <p class="support-fine">Or write your message below and send it. <a href="/page/privacy" target="_blank">Privacy</a></p>
       </form>`;
     const f = body.querySelector('.support-details');
     f.querySelectorAll('input').forEach((i) => i.addEventListener('input', () => i.classList.remove('is-bad')));
-    // Enter moves on: name → email → the message box. It never sends; only the send button
-    // (or Enter in the message box itself) does, so a half-written message can't go by accident.
-    f.addEventListener('submit', (e) => e.preventDefault());
+    // Start chat (or Enter in the email box) opens the conversation with the name and email alone; whatever is in the
+    // message box stays there to send. Enter in the name box moves on to the email.
+    f.addEventListener('submit', (e) => { e.preventDefault(); startChat(ta.value.trim(), true); });
     f.addEventListener('keydown', (e) => {
-      if (e.key !== 'Enter' || e.isComposing) return;
+      if (e.key !== 'Enter' || e.isComposing || e.target.name !== 'name') return;
       e.preventDefault();
-      if (e.target.name === 'name') return f.querySelector('input[name=email]').focus({ preventScroll: true });
-      ta.focus({ preventScroll: true });
-      ta.setSelectionRange(ta.value.length, ta.value.length);
+      f.querySelector('input[name=email]').focus({ preventScroll: true });
     });
-    body.querySelectorAll('[data-topic]').forEach((b) => b.addEventListener('click', () => {
-      body.querySelectorAll('[data-topic]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
-      const starters = [...body.querySelectorAll('[data-topic]')].map((x) => x.dataset.topic);
-      if (!ta.value.trim() || starters.includes(ta.value)) ta.value = b.dataset.topic; // never overwrite their own words
-      ta.dispatchEvent(new Event('input'));
-      ta.focus({ preventScroll: true });
-      ta.setSelectionRange(ta.value.length, ta.value.length);
-    }));
+    wireTopics();
+    updateTag();
     focusSoon(f.querySelector('input[name=name]'));
   }
 
@@ -297,6 +362,7 @@
      entering it opens that conversation (their new message is added to it). */
   function renderCode(info, form) {
     compose.hidden = true;
+    updateTag();
     shown = -1;
     body.innerHTML = `
       <div class="support-intro">
@@ -370,11 +436,18 @@
     compose.querySelector('.support-attach').hidden = false;
     compose.querySelector('textarea').placeholder = 'Write a message';
     const msgs = d.messages || [];
+    lastMsgs = msgs;
+    updateTag();
     teamCount = msgs.filter((m) => m.from === 'team').length;
     store.set(SEEN, String(teamCount));
     if (msgs.length === shown) return;
     const before = shown;
     shown = msgs.length;
+    if (!msgs.length) { // opened with name and email only: nothing said yet
+      body.innerHTML = welcome(d.name || '');
+      wireTopics();
+      return;
+    }
     const near = body.scrollHeight - body.scrollTop - body.clientHeight < 80;
     body.innerHTML = msgs.map((m, i) => {
       const prev = msgs[i - 1];
@@ -390,6 +463,7 @@
             ? `<a class="support-photo" href="${esc(m.file.url)}?token=${encodeURIComponent(token)}" target="_blank" rel="noopener"><img src="${esc(m.file.url)}?token=${encodeURIComponent(token)}" alt="${esc(m.file.name)}" loading="lazy" /></a>`
             : `<a class="support-file" href="${esc(m.file.url)}?token=${encodeURIComponent(token)}">${ICON.doc}<span><strong>${esc(m.file.name)}</strong><small>${esc(m.file.size)} · download</small></span></a>`) : ''}
           ${m.offer ? `<a class="support-offer" href="${esc(m.offer.link)}">${m.offer.image ? `<img src="${esc(m.offer.image)}" alt="" loading="lazy" />` : '<span class="support-offer-img"></span>'}<span class="support-offer-text"><strong>${esc(m.offer.product)}</strong><small>${esc(m.offer.status)}</small></span><span class="support-offer-go">See your offer</span></a>` : ''}
+          ${m.product ? `<a class="support-offer support-product" href="${esc(m.product.link)}">${m.product.image ? `<img src="${esc(m.product.image)}" alt="" loading="lazy" />` : '<span class="support-offer-img"></span>'}<span class="support-offer-text"><strong>${esc(m.product.name)}</strong><small>${esc(m.product.option || 'About this piece')}</small></span></a>` : ''}
           ${m.text ? `<div class="support-bubble">${esc(m.text)}</div>` : ''}
           ${last ? `<p class="support-meta">${m.from === 'you' ? 'You · ' : ''}${fmt(m.at)}${m.from === 'you' ? `<span class="support-tick" title="Sent">${ICON.tick}<span class="sr-only">Sent</span></span>` : ''}</p>` : ''}
         </div>`;
