@@ -133,7 +133,7 @@
   const BADGES = `
     <ul class="co-badges">
       <li>${CO_ICON.shield}<span><strong>Insured delivery</strong>Tracked and signed-for, to your door</span></li>
-      <li>${CO_ICON.blade}<span><strong>Hand-sharpened</strong>Checked twice before it ships</span></li>
+      <li>${CO_ICON.blade}<span><strong>Finished by hand</strong>Checked twice before it ships</span></li>
       <li>${CO_ICON.mail}<span><strong>Pay after ordering</strong>Payment details come by email</span></li>
     </ul>`;
 
@@ -231,7 +231,7 @@
               <label class="co-payopt"><input type="radio" name="pay" value="bank" /><span><strong>Bank transfer</strong><small>Our bank details come straight away, with your order number as reference.</small></span></label>
             </fieldset>
             <fieldset class="co-checks">
-              <label class="co-check"><input type="checkbox" name="adult" required /> <span>I am <strong>18 or over</strong>, and owning and importing this item is legal where I live. (<a href="/page/age-policy" target="_blank">Age policy</a>)</span></label>
+              <label class="co-check"><input type="checkbox" name="legal" required /> <span>Owning and importing this item is legal where I live.</span></label>
               <label class="co-check"><input type="checkbox" name="agree" required /> <span>I agree to the <a href="/page/terms" target="_blank">terms</a>, <a href="/page/shipping" target="_blank">shipping</a> and <a href="/page/returns" target="_blank">returns</a> policies.</span></label>
             </fieldset>
             <label class="hp" aria-hidden="true">Website <input name="website" tabindex="-1" autocomplete="off" /></label>
@@ -437,7 +437,7 @@
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(data.email.trim())) return fail('That email address doesn’t look right.', ['email']);
       if (countrySel.value === 'Australia' && !regionSel.value) return fail('Please choose your Australian state or territory.', ['region']);
       if (verdict.blocked) return fail(verdict.blocked, ['country']);
-      if (!form.adult.checked || !form.agree.checked) return fail('Please tick both boxes to confirm.');
+      if (!form.legal.checked || !form.agree.checked) return fail('Please tick both boxes to confirm.');
       submit.disabled = true;
       submit.dataset.busy = '1';
       submit.textContent = 'Placing your order…';
@@ -445,7 +445,7 @@
         const res = await fetch('/api/orders', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...data, pay: chosen(), product: product.slug, variant, qty, adult: true, agree: true, offer: cfg.offer ? cfg.offer.token : '' }),
+          body: JSON.stringify({ ...data, pay: chosen(), product: product.slug, variant, qty, legal: true, agree: true, offer: cfg.offer ? cfg.offer.token : '' }),
         });
         const out = await res.json().catch(() => ({}));
         if (!res.ok || !out.ok) {

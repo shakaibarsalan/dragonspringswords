@@ -10,10 +10,10 @@
  */
 window.DRAGONSPRING = {
   marquee: [
-    'Hand-sharpened before it ships',
+    'Finished by hand before it ships',
     'Insured delivery worldwide',
-    'Free resharpening for life',
-    'Blades sold to buyers 18+ only',
+    'Free knife resharpening for life',
+    'Custom orders welcome',
   ],
 
   categories: [

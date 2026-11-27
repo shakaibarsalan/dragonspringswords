@@ -196,7 +196,7 @@
     const key = activeKey();
     const links = navLinks();
     const helpSlugs = [['shipping', 'Shipping & delivery'], ['returns', 'Returns & exchanges'], ['care', 'Care & sharpening'], ['contact', 'Contact']];
-    const legalSlugs = [['terms', 'Terms'], ['privacy', 'Privacy'], ['age-policy', 'Age policy']];
+    const legalSlugs = [['terms', 'Terms'], ['privacy', 'Privacy']];
     if (!document.getElementById('i-menu')) {
       document.body.insertAdjacentHTML('afterbegin', SPRITE + '<a href="#main" class="skip-link">Skip to content</a>');
     }
@@ -272,7 +272,7 @@
           </div>
           <div class="footer-bottom">
             <div class="footer-legal">
-              <p>© ${new Date().getFullYear()} Dragon Spring Swords. Blades are sold only to buyers aged 18 and over.</p>
+              <p>© ${new Date().getFullYear()} Dragon Spring Swords.</p>
               <p class="legal-links">${legalSlugs.map(([s, t]) => `<a href="${pageUrl(s)}">${esc(t)}</a>`).join('')}<span class="rates-credit" hidden><a href="https://www.exchangerate-api.com" rel="noopener" target="_blank">Rates by Exchange Rate API</a></span></p>
             </div>
             <div class="footer-social">
@@ -949,7 +949,6 @@
               <ul class="order-points">
                 <li>${icon('flame')} ${['katanas', 'swords'].includes(p.categorySlug) ? 'Unsharpened edge, made for display' : 'Sharpened and checked by hand'}</li>
                 <li>${icon('truck')} Insured, tracked delivery</li>
-                <li>${icon('shield')} Sold only to buyers 18+</li>
               </ul>
             </div>
 
@@ -1145,7 +1144,7 @@
 
   /* ---------------------------------------------------------------------------
      INFO PAGES  /* ---------------------------------------------------------------------------
-     INFO PAGES (shipping, returns, care, terms, privacy, age policy, contact)
+     INFO PAGES (shipping, returns, care, terms, privacy, contact)
      ------------------------------------------------------------------------ */
   function renderInfo() {
     const root = $('#info');
