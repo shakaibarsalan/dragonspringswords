@@ -64,6 +64,8 @@
   const SPRITE = `<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
     <symbol id="i-menu" viewBox="0 0 24 24" ${P}><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></symbol>
     <symbol id="i-search" viewBox="0 0 24 24" ${P}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24" ${P}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+    <symbol id="i-bag" viewBox="0 0 24 24" ${P}><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></symbol>
     <symbol id="i-x" viewBox="0 0 24 24" ${P}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
     <symbol id="i-arrow-right" viewBox="0 0 24 24" ${P}><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
     <symbol id="i-arrow-left" viewBox="0 0 24 24" ${P}><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></symbol>
@@ -213,7 +215,8 @@
           <a href="/" class="wordmark" aria-label="Dragon Spring Swords home page"><img class="wordmark-mark" src="/assets/img/brand/logo-mark.webp" alt="" width="44" height="44" decoding="async" /><span class="wordmark-text"><span class="wordmark-name">Dragon Spring</span><span class="wordmark-sub">Swords</span></span></a>
           <div class="header-actions">
             ${currencyPicker('hide-md')}
-            <a href="/shop?focus=search" class="icon-link" aria-label="Search the shop">${icon('search', 'icon')}</a>
+            <a href="/shop?focus=search" class="icon-link hide-sm" aria-label="Search the shop">${icon('search', 'icon')}</a>
+            <a href="/account" class="icon-link account-link" data-account-link aria-label="Your account">${icon('user', 'icon')}</a>
           </div>
         </div>
       </header>
@@ -227,6 +230,7 @@
         </nav>
         <div class="shell mobile-menu-extra">
           ${currencyPicker()}
+          <a href="/account" data-account-link>Your account</a>
           <a href="${pageUrl('contact')}">Contact</a>
           <a href="/shop?focus=search">Search</a>
         </div>

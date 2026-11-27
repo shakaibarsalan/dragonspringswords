@@ -40,6 +40,9 @@
   let shown = -1;
   let teamCount = 0;
   let lastMsgs = []; // the conversation as last drawn: which pieces are already tagged in it
+  // Signed in to the store (account.js): the chat knows who they are, so no name/email card and no code
+  const account = () => (window.DSAccount && window.DSAccount.me) || { signedIn: false };
+  let mineAsked = false;
   let tagOff = ''; // a piece (slug|option) not to tag again on this page: untagged with the cross, or just sent
 
   const fmt = (ts) => {
@@ -257,11 +260,13 @@
   // Starting: the name and email from the card above. From its Start chat button (fromCard) that's all it takes, and
   // anything already typed below stays in the box to send; from the send button the message goes with it.
   async function startChat(text, fromCard) {
+    const me = account();
     const f = body.querySelector('.support-details');
-    if (!f) return;
+    if (!f && !me.signedIn) return;
     const field = (n) => f.querySelector(`[name=${n}]`);
-    const err = f.querySelector('.support-error');
+    const err = f && f.querySelector('.support-error');
     const fail = (m, name) => {
+      if (!f) return note(m);
       err.textContent = m;
       err.hidden = false;
       if (name) {
@@ -270,23 +275,27 @@
       }
       f.scrollIntoView({ block: 'nearest', behavior: reduced() ? 'auto' : 'smooth' });
     };
-    const d = { name: field('name').value.trim(), email: field('email').value.trim(), website: field('website').value, message: fromCard ? '' : text };
+    const d = f
+      ? { name: field('name').value.trim(), email: field('email').value.trim(), website: field('website').value, message: fromCard ? '' : text }
+      : { name: me.name || '', email: me.email, website: '', message: text }; // signed in: the account speaks
     if (!fromCard && onlyStarter(text)) {
       const ta = compose.querySelector('textarea');
       ta.focus({ preventScroll: true });
       ta.setSelectionRange(ta.value.length, ta.value.length);
       return note('Please finish your message after “' + text.replace(/\s+$/, '') + '”, then send it.');
     }
-    if (!d.name) return fail('Please add your name, so we know who we’re talking to.', 'name');
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.email)) return fail('Please add your email, so we can reply even if you leave.', 'email');
-    err.hidden = true;
+    if (f) {
+      if (!d.name) return fail('Please add your name, so we know who we’re talking to.', 'name');
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.email)) return fail('Please add your email, so we can reply even if you leave.', 'email');
+      err.hidden = true;
+    }
     const tag = d.message ? tagData() : {};
-    const btn = f.querySelector('.support-submit');
+    const btn = f && f.querySelector('.support-submit');
     compose.classList.add('is-busy');
-    btn.disabled = true;
+    if (btn) btn.disabled = true;
     const out = await api('/api/support/start', { ...d, ...tag, page: location.href, device: store.get(KEY) || '' });
     compose.classList.remove('is-busy');
-    btn.disabled = false;
+    if (btn) btn.disabled = false;
     if (!out || !out.ok) return fail((out && out.error) || 'Couldn’t reach us just now. Please try again.');
     const ta = compose.querySelector('textarea');
     if (d.message) {
@@ -331,6 +340,13 @@
     const ta = compose.querySelector('textarea');
     ta.placeholder = 'Write your message';
     shown = -1;
+    if (account().signedIn) { // signed in: straight to writing, greeted by name
+      body.innerHTML = welcome(account().name || '');
+      wireTopics();
+      updateTag();
+      focusSoon(ta);
+      return;
+    }
     body.innerHTML = `${welcome('')}
       <form class="support-details" novalidate>
         <p class="support-details-title">Your name and email, so we can reply</p>
@@ -341,9 +357,10 @@
         <label class="hp" aria-hidden="true">Website <input name="website" tabindex="-1" autocomplete="off" /></label>
         <p class="support-error" role="alert" hidden></p>
         <button type="submit" class="support-submit"><span>Start chat</span>${ICON.arrow}</button>
-        <p class="support-fine">Or write your message below and send it. <a href="/page/privacy" target="_blank">Privacy</a></p>
+        <p class="support-fine">Or write your message below and send it. Have an account? <button type="button" class="support-link" data-signin>Sign in</button> · <a href="/page/privacy" target="_blank">Privacy</a></p>
       </form>`;
     const f = body.querySelector('.support-details');
+    f.querySelector('[data-signin]').addEventListener('click', () => { if (window.DSAccount) window.DSAccount.signIn(); });
     f.querySelectorAll('input').forEach((i) => i.addEventListener('input', () => i.classList.remove('is-bad')));
     // Start chat (or Enter in the email box) opens the conversation with the name and email alone; whatever is in the
     // message box stays there to send. Enter in the name box moves on to the email.
@@ -401,6 +418,7 @@
       store.set(KEY, token);
       renderThread(out);
       updateLauncher();
+      if (window.DSAccount) window.DSAccount.refresh(); // the code proved the email: the store is signed in too
     });
     const edit = body.querySelector('[data-act=edit]');
     if (edit) edit.addEventListener('click', () => {
@@ -535,7 +553,11 @@
     // Before a conversation exists there is nothing to poll: draw the start form once, never again
     // (redrawing it every few seconds wiped what the visitor was typing).
     if (!token) {
-      if (!body.querySelector('.support-details, .support-start')) renderStart(); // reopening keeps what they typed
+      if (account().signedIn && !mineAsked) { // signed in on this browser: open on their latest conversation
+        mineAsked = true;
+        if (await adoptMine(false)) return refresh(first);
+      }
+      if (!body.querySelector('.support-details, .support-start, .support-welcome')) renderStart(); // reopening keeps what they typed
       return;
     }
     const out = await api('/api/support/thread?token=' + encodeURIComponent(token) + '&visible=' + (document.visibilityState === 'visible' ? 1 : 0));
@@ -719,7 +741,57 @@
     updateLauncher();
   }
 
-  window.DSSupport = { open, close, setToken };
+  /* One login with the store: the signed-in customer's chat is their latest conversation (or none yet), never
+     someone else's left on this browser; signing out forgets the conversation here. */
+  async function adoptMine(force) {
+    const m = await api('/api/support/mine');
+    if (!m || !m.signedIn) return false;
+    const t = m.token || null;
+    if (!force && !t) return false;
+    if (t !== token) {
+      token = t;
+      if (t) store.set(KEY, t); else store.del(KEY);
+      shown = -1;
+      lastMsgs = [];
+      updateLauncher();
+    }
+    return !!t;
+  }
+  let wasSignedIn = null;
+  document.addEventListener('ds:account', async (e) => {
+    const now = !!(e.detail && e.detail.signedIn);
+    if (wasSignedIn === now) return;
+    const onLoad = wasSignedIn === null;
+    wasSignedIn = now;
+    mineAsked = false;
+    if (now) {
+      await adoptMine(true);
+      if (panel && isOpen) { if (token) refresh(true); else renderStart(); }
+    } else if (!onLoad) {
+      token = null;
+      store.del(KEY);
+      store.del(SEEN);
+      shown = -1;
+      lastMsgs = [];
+      if (panel && isOpen) renderStart();
+      updateLauncher();
+    }
+  });
+
+  // From the account page: open one of their conversations, or the chat with words ready to finish
+  function openThread(t) {
+    if (t && t !== token) { token = t; store.set(KEY, t); shown = -1; }
+    open();
+  }
+  function ask(text) {
+    open();
+    const ta = compose.querySelector('textarea');
+    if (!ta.value.trim()) { ta.value = text; ta.dispatchEvent(new Event('input')); }
+    ta.focus({ preventScroll: true });
+    ta.setSelectionRange(ta.value.length, ta.value.length);
+  }
+
+  window.DSSupport = { open, close, setToken, openThread, ask };
   document.addEventListener('click', (e) => {
     const a = e.target.closest('[data-support-open]');
     if (a) { e.preventDefault(); open(); }
