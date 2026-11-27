@@ -18,7 +18,13 @@
  * When card and bank transfer both apply, the buyer chooses; when neither does, the order
  * can't be placed and the buyer is asked to message the shop instead.
  *
- * On product pages: reveals the "Buy now" button ([data-buy]) when online
+ * Several pieces: /checkout?cart=1 orders what is in the cart (cart.js), each piece with its own quantity and a
+ * Remove button; the country rules are checked for every piece. /checkout?p=<slug> stays the one-piece "Buy now".
+ *
+ * With an account (account.js, optional): signed in, the contact details and saved addresses fill in, and a new
+ * address can be saved with one tick; guests can sign in here, or create an account after ordering.
+ *
+ * On product pages: reveals "Add to cart" ([data-add-cart]) and "Buy now" ([data-buy]) when online
  * ordering is switched on in the admin.
  */
 (function () {
@@ -61,8 +67,8 @@
     }
   }
 
-  /* -------------------------------------------------- product page: Buy now */
-  const buy = document.querySelectorAll('[data-buy]');
+  /* -------------------------------------------------- product page: Add to cart and Buy now */
+  const buy = document.querySelectorAll('[data-buy], [data-add-cart]');
   if (buy.length) {
     config().then((cfg) => {
       if (!cfg.open) return;
@@ -79,14 +85,19 @@
   const root = $('#checkout');
   if (!root) return;
 
-  const slug = new URLSearchParams(location.search).get('p') || '';
+  const params = new URLSearchParams(location.search);
+  const slug = params.get('p') || '';
+  const cartMode = !slug && params.get('cart') === '1';
   const product = (C.products || []).find((p) => p.slug === slug);
   // Pieces sold by option (?v=index): the chosen option sets the price and is named on the order.
   let variant = -1;
+  let optionLabel = '';
+  const baseName = product ? product.name : '';
   if (product && Array.isArray(product.variants) && product.variants.length) {
-    const v = parseInt(new URLSearchParams(location.search).get('v') || '0', 10);
+    const v = parseInt(params.get('v') || '0', 10);
     variant = Math.min(Math.max(Number.isFinite(v) ? v : 0, 0), product.variants.length - 1);
     const opt = product.variants[variant];
+    optionLabel = opt.label;
     product.price = Number(opt.price);
     product.name = `${product.name} · ${opt.label}`;
     product.subtitle = '';
@@ -157,23 +168,42 @@
   }
 
   function render(cfg) {
-    if (!product) {
-      message('This piece isn’t available', 'It may have sold or been taken down.', '<a class="btn btn-dark" href="/shop">Browse the shop</a>');
-      return;
+    // The pieces being ordered: the cart's, or Buy now's one piece
+    let lines = [];
+    let dropped = 0;
+    if (cartMode) {
+      const all = window.DSCart ? window.DSCart.lines() : [];
+      dropped = all.filter((l) => l.gone).length;
+      lines = all.filter((l) => !l.gone).map((l) => ({ key: l.key, slug: l.slug, variant: l.v == null ? -1 : l.v, name: l.name,
+        option: l.option, price: l.price, image: l.image, qty: l.qty, max: l.max, link: l.link }));
+      if (!lines.length) {
+        message('Your cart is empty', dropped ? 'The pieces that were in it have sold out.' : 'Find a blade you love, then add it to your cart.', '<a class="btn btn-dark" href="/shop">Browse the shop</a>');
+        return;
+      }
+      if (!cfg.open) {
+        message('Online ordering opens soon', 'For now, order by WhatsApp or email and we’ll arrange payment and delivery with you.', contactButtons());
+        return;
+      }
+    } else {
+      if (!product) {
+        message('This piece isn’t available', 'It may have sold or been taken down.', '<a class="btn btn-dark" href="/shop">Browse the shop</a>');
+        return;
+      }
+      if (!cfg.open) {
+        message('Online ordering opens soon', `For now, order “${product.name}” by WhatsApp or email and we’ll arrange payment and delivery with you.`, contactButtons());
+        return;
+      }
+      if (product.inStock === false) {
+        message('This piece is sold out', 'Ask us about the next batch. We’ll reserve one for you.', contactButtons());
+        return;
+      }
+      // an agreed offer: that price, for one piece
+      if (cfg.offer) product.price = Number(cfg.offer.price);
+      lines = [{ key: '', slug: product.slug, variant, name: baseName, option: optionLabel, price: product.price,
+        image: (product.images || [])[0], qty: 1, max: cfg.offer ? 1 : Math.max(1, Number(cfg.maxQty) || 1), link: `/product/${product.slug}` }];
     }
-    if (!cfg.open) {
-      message('Online ordering opens soon', `For now, order “${product.name}” by WhatsApp or email and we’ll arrange payment and delivery with you.`, contactButtons());
-      return;
-    }
-    if (product.inStock === false) {
-      message('This piece is sold out', 'Ask us about the next batch. We’ll reserve one for you.', contactButtons());
-      return;
-    }
-    // an agreed offer: that price, for one piece
-    if (cfg.offer) product.price = Number(cfg.offer.price);
-    const maxQty = cfg.offer ? 1 : Math.max(1, Number(cfg.maxQty) || 1);
-    const img = (product.images || [])[0];
-    const wa = S.whatsapp ? ` or <a href="https://wa.me/${esc(S.whatsapp)}?text=${encodeURIComponent('Hello, a question about ' + product.name)}" target="_blank" rel="noopener">WhatsApp</a>` : '';
+    const what = lines.length === 1 ? lines[0].name : 'a few pieces';
+    const wa = S.whatsapp ? ` or <a href="https://wa.me/${esc(S.whatsapp)}?text=${encodeURIComponent('Hello, a question about ' + what)}" target="_blank" rel="noopener">WhatsApp</a>` : '';
     root.innerHTML = `
       <div class="co-head">
         <h1 class="co-title">Checkout</h1>
@@ -191,6 +221,7 @@
         <form class="checkout-form" id="checkout-form" novalidate>
           <section class="co-section" data-section="1">
             <header class="co-section-head"><span class="co-num">1</span><div><h2>Contact</h2><p>Your order confirmation and payment details go to this email.</p></div></header>
+            <div class="co-account" id="co-account"></div>
             <label class="co-field">Full name <input name="name" autocomplete="name" maxlength="80" required /></label>
             <div class="co-grid">
               <label class="co-field">Email <input name="email" type="email" autocomplete="email" maxlength="120" required /></label>
@@ -200,6 +231,7 @@
 
           <section class="co-section" data-section="2">
             <header class="co-section-head"><span class="co-num">2</span><div><h2>Delivery</h2><p>Insured, tracked and signed-for, to your door.</p></div></header>
+            <div class="co-saved" id="co-saved" hidden></div>
             <label class="co-field">Country <select name="country" id="co-country" autocomplete="country-name" required>${countryOptions(cfg)}</select></label>
             <div class="co-rules" id="co-rules" role="status" aria-live="polite" hidden></div>
             <label class="co-field">Address <input name="address1" autocomplete="address-line1" maxlength="120" required placeholder="Street and house number" /></label>
@@ -214,6 +246,7 @@
               </label>
               <label class="co-field">Postcode <input name="postcode" autocomplete="postal-code" maxlength="20" /></label>
             </div>
+            <label class="co-check co-save" id="co-save" hidden><input type="checkbox" name="saveAddress" checked /> <span>Save this address to my account</span></label>
             <p class="co-hint co-hint-ico">${CO_ICON.info}<span>Some countries restrict importing blades. Please check your local rules; we can’t ship where it isn’t allowed.</span></p>
             <details class="co-note">
               <summary>Add a note <small>engraving request, delivery instructions</small></summary>
@@ -247,22 +280,8 @@
 
         <aside class="checkout-summary" id="co-summary" aria-label="Order summary">
           <p class="co-summary-title">Your order</p>
-          <div class="co-item">
-            ${img ? `<img src="${esc(img)}" alt="" />` : '<span class="co-item-noimg"></span>'}
-            <div>
-              <p class="co-item-name">${esc(product.name)}</p>
-              ${product.subtitle ? `<p class="co-muted">${esc(product.subtitle)}</p>` : ''}
-              <p class="co-muted">${cfg.offer ? `<strong class="co-deal">Agreed price ${usd(product.price)}</strong> · offer ${esc(cfg.offer.number)}` : `${usd(product.price)} each`}</p>
-            </div>
-          </div>
-          <div class="co-qty">
-            <span>Quantity</span>
-            <div class="co-stepper">
-              <button type="button" data-step="-1" aria-label="One fewer">−</button>
-              <output id="co-qty" aria-live="polite">1</output>
-              <button type="button" data-step="1" aria-label="One more">+</button>
-            </div>
-          </div>
+          <ul class="co-lines" id="co-lines"></ul>
+          ${dropped ? `<p class="co-muted co-dropped">${dropped === 1 ? 'One piece in your cart has' : `${dropped} pieces in your cart have`} sold out, so ${dropped === 1 ? 'it isn’t' : 'they aren’t'} included.</p>` : ''}
           <dl class="co-totals">
             <div><dt>Subtotal</dt><dd id="co-subtotal"></dd></div>
             <div><dt>Shipping <small>insured, tracked, signed-for</small></dt><dd id="co-shipping"></dd></div>
@@ -283,25 +302,58 @@
         </aside>
       </div>`;
 
-    let qty = 1;
+    // the pieces, each with its quantity (and Remove, for the cart)
+    const linesBox = $('#co-lines');
+    function drawLines() {
+      linesBox.innerHTML = lines.map((l, i) => `
+        <li class="co-line${verdict && verdict.blockedSlug === l.slug ? ' is-blocked' : ''}" data-i="${i}">
+          <a class="co-line-img" href="${esc(l.link)}" tabindex="-1">${l.image ? `<img src="${esc(l.image)}" alt="" />` : '<span class="co-item-noimg"></span>'}</a>
+          <div class="co-line-main">
+            <p class="co-item-name">${esc(l.name)}</p>
+            ${l.option ? `<p class="co-muted">${esc(l.option)}</p>` : ''}
+            <p class="co-muted">${!cartMode && cfg.offer ? `<strong class="co-deal">Agreed price ${usd(l.price)}</strong> · offer ${esc(cfg.offer.number)}` : `${usd(l.price)} each`}</p>
+            <div class="co-line-row">
+              <div class="co-stepper" role="group" aria-label="Quantity">
+                <button type="button" data-step="-1" aria-label="One fewer"${l.qty <= 1 ? ' disabled' : ''}>−</button>
+                <output aria-live="polite">${l.qty}</output>
+                <button type="button" data-step="1" aria-label="One more"${l.qty >= l.max ? ' disabled' : ''}>+</button>
+              </div>
+              ${cartMode ? '<button type="button" class="co-remove" data-remove>Remove</button>' : ''}
+            </div>
+          </div>
+          <span class="co-line-total">${usd(l.price * l.qty)}</span>
+        </li>`).join('');
+    }
+    linesBox.addEventListener('click', (e) => {
+      const li = e.target.closest('[data-i]');
+      if (!li) return;
+      const l = lines[Number(li.dataset.i)];
+      const stepBtn = e.target.closest('[data-step]');
+      if (stepBtn) {
+        l.qty = Math.min(l.max, Math.max(1, l.qty + Number(stepBtn.dataset.step)));
+        if (cartMode && window.DSCart) window.DSCart.setQty(l.key, l.qty);
+      } else if (e.target.closest('[data-remove]')) {
+        lines.splice(Number(li.dataset.i), 1);
+        if (cartMode && window.DSCart) window.DSCart.remove(l.key);
+        if (!lines.length) return message('Your cart is empty', 'Find a blade you love, then add it to your cart.', '<a class="btn btn-dark" href="/shop">Browse the shop</a>');
+        checkRules();
+      } else return;
+      drawLines();
+      totals();
+      if (!submit.dataset.busy) showVerdict();
+    });
     function totals() {
-      const subtotal = product.price * qty;
+      const subtotal = lines.reduce((sum, l) => sum + l.price * l.qty, 0);
       const free = cfg.freeShippingOver != null && subtotal >= cfg.freeShippingOver;
       const shipping = free ? 0 : Number(cfg.shippingFee) || 0;
-      $('#co-qty').textContent = qty;
       $('#co-subtotal').textContent = usd(subtotal);
       $('#co-shipping').textContent = shipping ? usd(shipping) : 'Free';
       $('#co-total').textContent = usd(subtotal + shipping);
       $('#co-approx').textContent = approx(subtotal + shipping);
       root.querySelectorAll('[data-co-total]').forEach((el) => (el.textContent = usd(subtotal + shipping)));
     }
-    root.querySelectorAll('[data-step]').forEach((b) =>
-      b.addEventListener('click', () => {
-        qty = Math.min(maxQty, Math.max(1, qty + Number(b.dataset.step)));
-        totals();
-        if (!submit.dataset.busy) showVerdict();
-      }),
-    );
+    let verdict = { blocked: null, needsCheck: false, buyerNotes: [] };
+    drawLines();
     totals();
 
     // phones: the order summary folds away under a "Show order summary" bar
@@ -332,7 +384,6 @@
     const regionSel = $('#co-region-select');
     const rulesBox = $('#co-rules');
     const submitHint = $('#co-submit-hint');
-    let verdict = { blocked: null, needsCheck: false, buyerNotes: [] };
     let checkSeq = 0;
 
     // How this buyer can pay: bank transfer from their country, and/or card (a Payoneer request by email).
@@ -356,8 +407,8 @@
     }
     function contactRow(country) {
       const out = [];
-      if (S.whatsapp) out.push(`<a class="btn btn-dark" href="https://wa.me/${esc(S.whatsapp)}?text=${encodeURIComponent(`Hello, I’d like to order ${product.name} to ${country}.`)}" target="_blank" rel="noopener">WhatsApp us</a>`);
-      if (S.email) out.push(`<a class="btn btn-outline-dark" href="mailto:${esc(S.email)}?subject=${encodeURIComponent('Order: ' + product.name)}">Email us</a>`);
+      if (S.whatsapp) out.push(`<a class="btn btn-dark" href="https://wa.me/${esc(S.whatsapp)}?text=${encodeURIComponent(`Hello, I’d like to order ${what} to ${country}.`)}" target="_blank" rel="noopener">WhatsApp us</a>`);
+      if (S.email) out.push(`<a class="btn btn-outline-dark" href="mailto:${esc(S.email)}?subject=${encodeURIComponent('Order: ' + what)}">Email us</a>`);
       return out.length ? `<div class="co-rules-actions">${out.join('')}</div>` : '';
     }
 
@@ -380,7 +431,7 @@
       payOne.hidden = both;
       submit.textContent = none ? 'Message us to order' : verdict.needsCheck ? SUBMIT_CHECK : way === 'card' ? SUBMIT_CARD : SUBMIT_PAY;
       submitHint.textContent = verdict.blocked
-        ? 'This piece can’t be shipped to the address above.'
+        ? (lines.length > 1 ? 'One piece can’t be shipped to the address above. Remove it to order the rest.' : 'This piece can’t be shipped to the address above.')
         : none
           ? 'Message us and we’ll arrange payment and delivery with you.'
           : verdict.needsCheck
@@ -404,10 +455,11 @@
       $('#co-region-text').textContent = isAU ? 'State / territory' : 'State / region';
       const state = isAU ? regionSel.value : '';
       verdict = { blocked: null, needsCheck: false, buyerNotes: [] };
-      if (!country || (isAU && !state)) return showVerdict();
+      if (!country || (isAU && !state)) { drawLines(); return showVerdict(); }
       const seq = ++checkSeq;
       try {
-        const q = new URLSearchParams({ p: product.slug, country, state });
+        const q = new URLSearchParams({ country, state });
+        lines.forEach((l) => q.append('p', l.slug));
         const res = await fetch('/api/shipping-check?' + q, { headers: { Accept: 'application/json' } });
         const out = await res.json();
         if (seq !== checkSeq) return;
@@ -415,6 +467,7 @@
       } catch (_) {
         /* the server checks again when the order is placed */
       }
+      drawLines();
       showVerdict();
     }
     countrySel.addEventListener('change', checkRules);
@@ -445,16 +498,24 @@
         const res = await fetch('/api/orders', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...data, pay: chosen(), product: product.slug, variant, qty, legal: true, agree: true, offer: cfg.offer ? cfg.offer.token : '' }),
+          body: JSON.stringify({
+            ...data, pay: chosen(), legal: true, agree: true,
+            saveAddress: !!(form.saveAddress && form.saveAddress.checked && !$('#co-save').hidden),
+            ...(cartMode
+              ? { items: lines.map((l) => ({ product: l.slug, variant: l.variant, qty: l.qty })) }
+              : { product: lines[0].slug, variant: lines[0].variant, qty: lines[0].qty, offer: cfg.offer ? cfg.offer.token : '' }),
+          }),
         });
         const out = await res.json().catch(() => ({}));
         if (!res.ok || !out.ok) {
           if (out.blocked) {
-            verdict = { blocked: out.error, needsCheck: false, buyerNotes: [] };
+            verdict = { blocked: out.error, blockedSlug: out.gone || '', needsCheck: false, buyerNotes: [] };
+            drawLines();
             showVerdict();
           }
           return fail(out.error || 'Something went wrong. Please try again.', out.fields || (out.blocked ? ['country'] : []));
         }
+        if (cartMode && window.DSCart) window.DSCart.clear();
         done(out);
       } catch (_) {
         fail('Couldn’t reach us just now. Please check your connection and try again.');
@@ -463,6 +524,61 @@
         if (document.body.contains(submit)) showVerdict();
       }
     });
+
+    /* Signed in: details and saved addresses fill in. A guest can sign in here. */
+    let addresses = [];
+    const fill = (k, v) => { const el = form.elements[k]; if (el && !el.value.trim() && v) el.value = v; };
+    function useAddress(a) {
+      ['name', 'phone', 'address1', 'address2', 'city', 'postcode'].forEach((k) => { if (form.elements[k]) form.elements[k].value = a[k] || ''; });
+      countrySel.value = a.country || '';
+      checkRules().then(() => { (countrySel.value === 'Australia' ? regionSel : regionInput).value = a.region || ''; if (countrySel.value === 'Australia') checkRules(); });
+      regionInput.value = a.region || '';
+    }
+    function drawSaved() {
+      const box = $('#co-saved');
+      const save = $('#co-save');
+      const me = window.DSAccount ? window.DSAccount.me : { signedIn: false };
+      if (!me.signedIn || !addresses.length) { box.hidden = true; save.hidden = !me.signedIn; return; }
+      box.hidden = false;
+      box.innerHTML = `<p class="co-saved-title">Deliver to</p><div class="co-saved-list">${addresses.map((a) => `
+        <label class="co-payopt co-addr"><input type="radio" name="savedAddress" value="${a.id}"${a.default ? ' checked' : ''} /><span><strong>${esc(a.name)}</strong><small>${esc([a.address1, a.city, a.country].filter(Boolean).join(', '))}</small></span></label>`).join('')}
+        <label class="co-payopt co-addr"><input type="radio" name="savedAddress" value="new" /><span><strong>A new address</strong><small>Fill it in below</small></span></label></div>`;
+      const pick = () => {
+        const v = (box.querySelector('input:checked') || {}).value;
+        const a = addresses.find((x) => String(x.id) === v);
+        save.hidden = !!a;
+        if (a) useAddress(a);
+        else ['address1', 'address2', 'city', 'postcode'].forEach((k) => { form.elements[k].value = ''; });
+      };
+      box.querySelectorAll('input').forEach((i) => i.addEventListener('change', pick));
+      if (box.querySelector('input:checked')) pick();
+    }
+    async function applyAccount() {
+      if (!window.DSAccount) return;
+      const me = window.DSAccount.me;
+      const box = $('#co-account');
+      if (!me.signedIn) {
+        box.innerHTML = `<p>Have an account? <button type="button" class="co-link" data-signin>Sign in</button> for a faster checkout.</p>`;
+        addresses = [];
+        drawSaved();
+        return;
+      }
+      box.innerHTML = `<p>Signed in as <strong>${esc(me.email)}</strong>. <button type="button" class="co-link" data-signout>Not you?</button></p>`;
+      fill('name', me.name);
+      fill('email', me.email);
+      fill('phone', me.phone);
+      const out = await window.DSAccount.api('/api/account/addresses');
+      addresses = out && out.ok ? out.addresses : [];
+      drawSaved();
+    }
+    $('#co-account').addEventListener('click', (e) => {
+      if (e.target.closest('[data-signin]')) window.DSAccount.signIn({ email: form.elements.email.value.trim() });
+      if (e.target.closest('[data-signout]')) window.DSAccount.signOut();
+    });
+    if (window.DSAccount) {
+      window.DSAccount.ready.then(applyAccount);
+      document.addEventListener('ds:account', () => { if (document.body.contains(form)) applyAccount(); });
+    }
 
     function fail(msg, fields = []) {
       error.textContent = msg;
@@ -473,6 +589,25 @@
       (first || error).scrollIntoView({ behavior: 'smooth', block: 'center' });
       if (first) first.focus({ preventScroll: true });
     }
+  }
+
+  function follow(o) {
+    const me = window.DSAccount && window.DSAccount.me;
+    if (!window.DSAccount) return '';
+    if (o.signedIn || (me && me.signedIn)) {
+      return `<p class="co-follow">Follow this order any time in <a href="/account?order=${encodeURIComponent(o.number)}#orders">your account</a>.</p>`;
+    }
+    return `<div class="co-follow-card" id="co-follow">
+      <div><p class="co-card-title">Follow this order</p><p>Create an account with <strong>${esc(o.email)}</strong> to see its payment, shipping and tracking any time. No password: we email you a code.</p></div>
+      <button type="button" class="btn btn-outline-dark" data-create>Create an account</button>
+    </div>`;
+  }
+  function wireFollow(o) {
+    const b = root.querySelector('[data-create]');
+    if (b) b.addEventListener('click', async () => {
+      const me = await window.DSAccount.signIn({ email: o.email });
+      if (me) $('#co-follow').outerHTML = `<p class="co-follow">Done. Follow this order any time in <a href="/account?order=${encodeURIComponent(o.number)}#orders">your account</a>.</p>`;
+    });
   }
 
   function done(o) {
@@ -496,8 +631,10 @@
           <li><strong>You pay</strong> once we’ve emailed the payment details (${usd(o.total)} USD).</li>
           <li><strong>We ship</strong> after the payment clears: insured, tracked and signed-for.</li>
         </ol>
+        ${follow(o)}
         <div class="checkout-message-actions"><a class="btn btn-dark" href="/shop">Keep browsing</a>${waLink}</div>
       </div>`;
+      wireFollow(o);
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -537,8 +674,10 @@ ${esc(o.bankDetails)}</pre>
           <li><strong>We confirm</strong>: you’ll get an email as soon as the payment clears.</li>
           <li><strong>We ship</strong>: insured, tracked and signed-for. The tracking number comes by email.</li>
         </ol>
+        ${follow(o)}
         <div class="checkout-message-actions"><a class="btn btn-dark" href="/shop">Keep browsing</a>${waLink}</div>
       </div>`;
+    wireFollow(o);
     window.scrollTo({ top: 0, behavior: 'smooth' });
     const copy = root.querySelector('[data-copy]');
     if (copy) copy.addEventListener('click', async () => {

@@ -197,3 +197,44 @@
 .co-card p { margin: 0; color: var(--content-muted); font-size: var(--text-sm); }
 .co-card .co-card-title { font-size: var(--text-xs); letter-spacing: 0.12em; text-transform: uppercase; color: var(--content-subtle); }
 @media (max-width: 479px) { .co-card .btn { width: 100%; } }
+
+/* Several pieces (the cart): one line each, with its quantity and Remove */
+.co-lines { display: grid; gap: 1rem; margin: 0; padding: 0; list-style: none; }
+.co-line { display: grid; grid-template-columns: 4.5rem minmax(0, 1fr) auto; gap: 0.875rem; align-items: start; }
+.co-line + .co-line { padding-top: 1rem; border-top: 1px solid var(--border-subtle); }
+.co-line-img img, .co-line-img .co-item-noimg { display: block; width: 4.5rem; aspect-ratio: 4 / 5; object-fit: cover; border-radius: 10px; background: var(--sand-100, #f4f1ea); }
+.co-line .co-item-name { font-size: 1.0625rem; }
+.co-line-main { display: grid; gap: 0.125rem; min-width: 0; }
+.co-line-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; margin-top: 0.5rem; }
+.co-line .co-stepper button { width: 2.125rem; height: 2.125rem; font-size: 1rem; }
+.co-line .co-stepper button:disabled { opacity: 0.35; cursor: default; background: none; }
+.co-line .co-stepper output { min-width: 1.75rem; font-size: var(--text-sm); }
+.co-remove, .co-link { padding: 0; font-size: var(--text-sm); color: var(--content-muted); text-decoration: underline; text-underline-offset: 3px; }
+.co-remove:hover, .co-link:hover { color: var(--content); }
+.co-line-total { font-size: var(--text-sm); font-variant-numeric: tabular-nums; white-space: nowrap; padding-top: 0.25rem; }
+.co-line.is-blocked .co-line-img img { opacity: 0.5; }
+.co-line.is-blocked .co-item-name::after { content: "Can't be shipped there"; display: block; margin-top: 0.25rem; font-family: var(--font-sans);
+  font-size: var(--text-xs); letter-spacing: 0.02em; color: var(--copper-600); }
+.co-dropped { padding: 0.625rem 0.875rem; border-radius: 10px; background: var(--sand-100, #f4f1ea); }
+
+/* The account at checkout: sign in, saved addresses, save a new one */
+.co-account:empty { display: none; }
+.co-account p { margin: 0; padding: 0.75rem 1rem; border-radius: 10px; background: var(--sand-100, #f4f1ea); font-size: var(--text-sm); color: var(--content-muted); }
+.co-account strong { color: var(--content); font-weight: 500; overflow-wrap: anywhere; }
+.co-link { color: var(--content); }
+.co-saved { display: grid; gap: 0.5rem; }
+.co-saved[hidden] { display: none; }
+.co-saved-title { margin: 0; font-size: 0.6875rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--content-subtle); }
+.co-saved-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap: 0.625rem; }
+.co-addr small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.co-save[hidden] { display: none; }
+
+/* After ordering: follow it in an account */
+.co-follow { margin: 0; padding: 0.875rem 1rem; border-radius: 10px; background: var(--sand-100, #f4f1ea); font-size: var(--text-sm); color: var(--content-muted); }
+.co-follow a { color: var(--content); text-decoration: underline; text-underline-offset: 3px; }
+.co-follow-card { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.125rem 1.25rem;
+  border: 1px solid var(--border); border-radius: 12px; background: #fff; text-align: left; }
+.co-follow-card > div { flex: 1 1 16rem; }
+.co-follow-card p { margin: 0; font-size: var(--text-sm); line-height: 1.55; color: var(--content-muted); }
+.co-follow-card .co-card-title { margin-bottom: 0.25rem; color: var(--content); font-weight: 500; }
+@media (max-width: 599px) { .co-follow-card .btn { width: 100%; } }

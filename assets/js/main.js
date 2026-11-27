@@ -126,6 +126,8 @@
     }
   }
   const priceSpan = (usd) => `<span data-usd="${Number(usd)}">${formatPrice(usd)}</span>`;
+  // for the cart (cart.js): prices in the visitor's currency, kept up to date when they change it
+  window.DSMoney = { format: (usd) => formatPrice(usd), span: priceSpan };
   const discountPercent = (base, effective) => (!base || effective >= base ? 0 : Math.round(((base - effective) / base) * 100));
 
   function updatePrices() {
@@ -217,6 +219,7 @@
             ${currencyPicker('hide-md')}
             <a href="/shop?focus=search" class="icon-link hide-sm" aria-label="Search the shop">${icon('search', 'icon')}</a>
             <a href="/account" class="icon-link account-link" data-account-link aria-label="Your account">${icon('user', 'icon')}</a>
+            <button type="button" class="icon-link cart-link" data-cart-open aria-label="Your cart" hidden>${icon('bag', 'icon')}<span class="bag-count" hidden>0</span></button>
           </div>
         </div>
       </header>
@@ -945,7 +948,7 @@
             ${p.finishes && p.finishes.length > 1 ? `<div class="finish-row reveal is-mount" style="--delay:0.32s"><span>Finishes</span><div class="swatches swatches-lg">${p.finishes.map((h) => `<span style="background:${esc(h)}"></span>`).join('')}</div></div>` : ''}
 
             <div class="order-box reveal is-mount" style="--delay:0.36s;--distance:14px">
-              ${inStock ? `<a class="btn btn-dark btn-block" href="/checkout?p=${encodeURIComponent(p.slug)}${vs.length ? '&v=0' : ''}" data-buy hidden>Buy now</a>` : ''}
+              ${inStock ? `<button type="button" class="btn btn-dark btn-block" data-add-cart="${esc(p.slug)}" hidden>Add to cart</button><a class="btn btn-outline-dark btn-block" href="/checkout?p=${encodeURIComponent(p.slug)}${vs.length ? '&v=0' : ''}" data-buy hidden>Buy now</a>` : ''}
               ${S.whatsapp ? `<a class="btn btn-dark btn-block" id="order-wa" target="_blank" rel="noopener">${icon('whatsapp')} ${inStock ? 'Order on WhatsApp' : 'Ask about availability'}</a>` : ''}
               ${S.email ? `<a class="btn ${S.whatsapp ? 'btn-outline-dark' : 'btn-dark'} btn-block" id="order-mail">${icon('mail')} ${inStock ? 'Email to order' : 'Email about availability'}</a>` : ''}
               ${inStock && S.offers_enabled === '1' && !vs.length ? '<button type="button" class="btn btn-outline-dark btn-block offer-open" data-offer-open>Make an offer</button>' : ''}
@@ -1012,7 +1015,7 @@
     window.DSProductNow = () => {
       if (!p) return null;
       const v = chosen();
-      return { slug: p.slug, name: p.name, option: v ? v.label : '',
+      return { slug: p.slug, name: p.name, option: v ? v.label : '', v: v ? current : null,
         image: (v && (v.thumb || v.image)) || (p.thumbs || p.images || [])[0] || '' };
     };
     // An option with its own photo shows it as the first photo; others bring back the product's own.
